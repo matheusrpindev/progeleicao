@@ -1,10 +1,13 @@
 Sons da urna (opcional)
 
-Sem nada nesta pasta, a urna gera os sons sozinha (imitação do som da urna
-eletrônica). Para usar uma gravação do som original, coloque aqui:
+Sem nada nesta pasta, a urna gera os sons sozinha, com as mesmas frequencias
+e tempos do som da urna eletronica. Para usar gravacoes, coloque aqui:
 
   tecla.mp3     - bip de cada tecla
-  confirma.mp3  - som de confirmação do voto ("pililili")
+  confirma.mp3  - som de confirmacao do voto ("pililili")
 
 Depois aperte F5 nas urnas. Os arquivos ficam no computador servidor e
 funcionam sem internet.
+
+Os arquivos .mp3 desta pasta NAO vao para o repositorio (estao no .gitignore):
+so use gravacoes que voce tenha direito de usar.
