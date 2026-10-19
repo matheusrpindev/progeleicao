@@ -39,27 +39,62 @@ function gerarUuid() {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-// ---------- Som (Web Audio, sem arquivos) ----------
+// ---------- Som ----------
+/*
+ * Por padrão os sons são sintetizados (Web Audio, sem arquivos), imitando a
+ * urna: um "bip" curto a cada tecla e o "pililili" (trinado rápido entre duas
+ * notas agudas) ao confirmar. Para ter o som idêntico ao original, coloque
+ * gravações em public/urna/sons/tecla.mp3 e public/urna/sons/confirma.mp3:
+ * se existirem, elas são usadas no lugar da síntese.
+ */
 let audio = null;
-function tom(freq, inicio, duracao, volume = 0.2) {
+const gravacoes = {}; // nome -> ArrayBuffer baixado, depois promessa do áudio decodificado
+for (const nome of ['tecla', 'confirma']) {
+  fetch(`/urna/sons/${nome}.mp3`)
+    .then((r) => (r.ok ? r.arrayBuffer() : null))
+    .then((dados) => { if (dados) gravacoes[nome] = dados; })
+    .catch(() => {});
+}
+
+// Notas [frequência Hz, início s, duração s] de cada som sintetizado.
+const NOTAS_TECLA = [[2350, 0, 0.09]];
+const NOTAS_CONFIRMA = Array.from({ length: 24 }, (_, i) => [i % 2 ? 2700 : 2050, i * 0.047, 0.045]);
+
+function agendarNotas(ctx, notas, volume = 0.18) {
+  const filtro = ctx.createBiquadFilter(); // suaviza a onda quadrada, como o alto-falante pequeno da urna
+  filtro.type = 'lowpass';
+  filtro.frequency.value = 5000;
+  filtro.connect(ctx.destination);
+  for (const [freq, inicio, duracao] of notas) {
+    const t = ctx.currentTime + inicio;
+    const osc = ctx.createOscillator();
+    const ganho = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    ganho.gain.setValueAtTime(0, t);
+    ganho.gain.linearRampToValueAtTime(volume, t + 0.003);
+    ganho.gain.setValueAtTime(volume, t + duracao - 0.003);
+    ganho.gain.linearRampToValueAtTime(0, t + duracao);
+    osc.connect(ganho).connect(filtro);
+    osc.start(t);
+    osc.stop(t + duracao + 0.01);
+  }
+}
+
+async function tocar(nome, notas) {
   if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
   if (audio.state === 'suspended') audio.resume();
-  const t = audio.currentTime + inicio;
-  const osc = audio.createOscillator();
-  const ganho = audio.createGain();
-  osc.type = 'square';
-  osc.frequency.value = freq;
-  ganho.gain.setValueAtTime(volume, t);
-  ganho.gain.setValueAtTime(0, t + duracao);
-  osc.connect(ganho).connect(audio.destination);
-  osc.start(t);
-  osc.stop(t + duracao + 0.02);
+  // Decodifica uma vez só (guarda a promessa, para toques seguidos não decodificarem em dobro).
+  if (gravacoes[nome] instanceof ArrayBuffer) gravacoes[nome] = audio.decodeAudioData(gravacoes[nome]).catch(() => null);
+  const gravacao = await gravacoes[nome];
+  if (!gravacao) return agendarNotas(audio, notas);
+  const fonte = audio.createBufferSource();
+  fonte.buffer = gravacao;
+  fonte.connect(audio.destination);
+  fonte.start();
 }
-const somTecla = () => tom(1200, 0, 0.07, 0.12);
-function somConfirma() {
-  [0, 0.12, 0.24, 0.36].forEach((t) => tom(1050, t, 0.08));
-  tom(1050, 0.48, 0.7);
-}
+const somTecla = () => tocar('tecla', NOTAS_TECLA);
+const somConfirma = () => tocar('confirma', NOTAS_CONFIRMA);
 
 // ---------- Desenho da tela ----------
 function chapaDigitada() {
