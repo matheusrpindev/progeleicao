@@ -17,6 +17,7 @@ function render() {
   $('btZeresima').disabled = bloqueado;
   $('btAbrir').disabled = bloqueado || !estado.zeresimaEm || estado.chapas.length === 0;
   $('btEncerrar').disabled = estado.status !== 'aberta';
+  $('cartaoNova').classList.toggle('oculto', estado.status !== 'encerrada');
 
   if (document.activeElement !== $('escola')) $('escola').value = estado.escola || '';
   if (document.activeElement !== $('eleicao')) $('eleicao').value = estado.eleicao || '';
@@ -150,6 +151,30 @@ $('btEncerrar').addEventListener('click', async () => {
   }
   render();
   mostrarAviso(aviso, 'ok', 'Votação encerrada. O resultado já pode ser visto na tela Resultado.');
+});
+
+$('formNova').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const aviso = $('avisoNova');
+  const corpo = { senha: $('senhaNova').value, apagarChapas: $('apagarChapas').checked };
+  if (!confirm(`Iniciar uma nova eleição?\n\nOs votos desta eleição serão zerados (uma cópia fica guardada em dados/arquivo).\n${corpo.apagarChapas ? 'As chapas também serão APAGADAS.' : 'As chapas serão mantidas.'}\n\nVocê já imprimiu a ata e exportou o resultado?`)) return;
+  let r;
+  try {
+    r = await api('POST', '/api/admin/nova-eleicao', corpo);
+  } catch (erro) {
+    if (erro.status !== 409) return mostrarAviso(aviso, 'erro', erro.message);
+    if (!confirm(`${erro.message}\n\nO ideal é ligar essa urna na rede antes. Iniciar a nova eleição mesmo assim?`)) return;
+    try {
+      r = await api('POST', '/api/admin/nova-eleicao', { ...corpo, forcar: true });
+    } catch (erro2) {
+      return mostrarAviso(aviso, 'erro', erro2.message);
+    }
+  }
+  $('formNova').reset();
+  aviso.classList.add('oculto');
+  estado = r;
+  render();
+  mostrarAviso($('avisoAndamento'), 'ok', `Nova eleição iniciada. A anterior foi guardada em dados/arquivo/${r.arquivo}. Confira os dados e as chapas e emita a zerésima.`);
 });
 
 window.addEventListener('focus', () => { if (estado) carregar(); });

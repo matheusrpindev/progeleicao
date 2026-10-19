@@ -26,6 +26,20 @@
       <div id="avisoAndamento" class="aviso oculto"></div>
     </section>
 
+    <section class="cartao oculto" id="cartaoNova">
+      <h2>Nova eleição</h2>
+      <p class="suave">Zera os votos e volta para a preparação. Antes, uma cópia completa desta eleição é guardada na pasta
+        <b>dados/arquivo</b>. A senha e os nomes da escola e da eleição continuam (dá para editar depois).
+        Imprima a ata e exporte o resultado antes.</p>
+      <form id="formNova">
+        <label class="normal"><input type="checkbox" id="apagarChapas"> Apagar também as chapas (deixe desmarcado se forem as mesmas)</label>
+        <label for="senhaNova">Confirme a senha</label>
+        <input type="password" id="senhaNova" required autocomplete="current-password">
+        <div class="acoes"><button type="submit" class="perigo">Iniciar nova eleição</button></div>
+        <div id="avisoNova" class="aviso oculto"></div>
+      </form>
+    </section>
+
     <section class="cartao">
       <h2>Dados da eleição</h2>
       <form id="formDados">

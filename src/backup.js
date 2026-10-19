@@ -31,7 +31,18 @@ function criarBackup(db) {
   const timer = setInterval(() => { if (alterado) fazerAgora(); }, config.intervaloBackupMs);
   timer.unref();
 
+  // Guarda uma cópia definitiva do banco (eleição encerrada) em dados/arquivo/.
+  async function arquivar() {
+    const d = new Date();
+    const dois = (n) => String(n).padStart(2, '0');
+    const nome = `eleicao-${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}_${dois(d.getHours())}h${dois(d.getMinutes())}m${dois(d.getSeconds())}s.db`;
+    fs.mkdirSync(config.pastaArquivo, { recursive: true });
+    await db.backup(path.join(config.pastaArquivo, nome));
+    return nome;
+  }
+
   return {
+    arquivar,
     marcarAlteracao: () => { alterado = true; },
     fazerAgora,
     destino,

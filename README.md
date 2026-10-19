@@ -36,7 +36,7 @@ Em **http://localhost:3000/admin**:
 2. Cadastre cada chapa: **número com 2 dígitos** (ex.: 10, 25), **nome** e, se quiser, a **foto ou logo**.
 3. Confira tudo com calma. Depois que a votação for aberta, **nada disso pode ser alterado**.
 
-> Faça um ensaio completo antes do dia (pode votar à vontade). Depois do ensaio, para começar do zero, feche o sistema e **apague a pasta `dados`** que fica dentro da pasta do sistema. Atenção: isso apaga também as chapas e a senha.
+> Faça um ensaio completo antes do dia (pode votar à vontade). Depois do ensaio, encerre a votação e use **Iniciar nova eleição** no Admin (veja o Passo 6): os votos do ensaio são zerados e as chapas continuam cadastradas.
 
 ---
 
@@ -108,7 +108,16 @@ Abra **http://localhost:3000/resultado** (só funciona depois de encerrar):
 - Clique em **Imprimir ata** e colha as assinaturas.
 - **Exportar CSV** (abre no Excel) e **Exportar JSON** guardam o resultado em arquivo.
 
-Ao final, copie a pasta **`dados`** inteira para um pendrive. Ela tem o banco da eleição (`eleicao.db`) e o backup.
+Ao final, copie a pasta **`dados`** inteira para um pendrive. Ela tem o banco da eleição (`eleicao.db`), o backup e as eleições anteriores (`arquivo/`).
+
+### Passo 6: Nova eleição (quando precisar)
+Para fazer outra eleição (um segundo turno, a eleição do ano seguinte, ou começar de novo depois do ensaio):
+1. Com a votação **encerrada**, imprima a ata e exporte o resultado.
+2. No **Admin**, aparece o quadro **Nova eleição**. Marque **"Apagar também as chapas"** só se as chapas forem outras.
+3. Digite a senha e clique em **Iniciar nova eleição**.
+
+Uma cópia completa da eleição anterior fica guardada em `dados/arquivo/` (um arquivo com a data e a hora). A senha e os nomes da escola e da eleição continuam (dá para editar). Os votos e as liberações voltam a zero, e o caminho recomeça pela **zerésima**.
+Se alguma urna ficou com uma liberação sem voto, o sistema avisa antes: se ela estava desconectada, ligue-a na rede primeiro para enviar algum voto que tenha ficado guardado nela.
 
 ---
 
@@ -138,7 +147,7 @@ Ao final, copie a pasta **`dados`** inteira para um pendrive. Ela tem o banco da
 - O sistema já está aberto em outra janela preta. Use aquela, ou feche as duas e abra de novo.
 
 **Esqueci a senha**
-- Não tem como recuperar. Antes da eleição: feche o sistema, apague a pasta `dados` e cadastre tudo de novo. **Durante a eleição, não apague nada**: chame o responsável técnico.
+- Não tem como recuperar. Antes da eleição: feche o sistema, renomeie a pasta `dados` (por exemplo para `dados-antigo`) e cadastre tudo de novo, criando outra senha. **Durante a eleição, não mexa em nada**: chame o responsável técnico.
 
 ---
 
@@ -146,7 +155,7 @@ Ao final, copie a pasta **`dados`** inteira para um pendrive. Ela tem o banco da
 
 - `npm install` e depois `npm start` (o mesmo que o `iniciar.bat` faz). A porta pode ser trocada com a variável `PORT`.
 - `npm test` roda o **teste de concorrência**: sobe um servidor temporário, simula as 4 urnas votando ao mesmo tempo (500 votações, com reenvios duplicados, quedas de conexão e queda do servidor no meio) e confere se a contagem final bate exatamente.
-- Dados em `dados/`: `eleicao.db` (SQLite em modo WAL), `fotos/` e `backup/eleicao-backup.db` (substituído a cada minuto em que houve voto, e também ao ligar o sistema, ao abrir e ao encerrar a votação).
+- Dados em `dados/`: `eleicao.db` (SQLite em modo WAL), `fotos/`, `arquivo/` (cópias das eleições anteriores, feitas por "Iniciar nova eleição") e `backup/eleicao-backup.db` (substituído a cada minuto em que houve voto, e também ao ligar o sistema, ao abrir e ao encerrar a votação).
 - **Sigilo do voto:** a tabela `votos` guarda só um id aleatório (UUID gerado na urna), a urna e a escolha, além dos hashes do encadeamento. Não tem horário nem número sequencial (`WITHOUT ROWID`). A cadeia de hash segue a ordem do id aleatório, não a ordem de chegada, então não revela a sequência dos eleitores. As liberações ficam em outra tabela, só como contadores. Pelo mesmo motivo, o backup é um único arquivo substituído, e não uma série de cópias que poderiam ser comparadas entre si.
 - **Sons da urna:** gerados pelo navegador (Web Audio), sem arquivos: um bip por tecla e o "pililili" na confirmação. Para usar gravações do som original, coloque `tecla.mp3` e `confirma.mp3` na pasta `public/urna/sons/` (veja o `LEIA-ME.txt` de lá).
 - **Integridade:** cada voto guarda o hash do anterior, e o hash final também fica gravado à parte e sai impresso na ata. A verificação recalcula a cadeia inteira.

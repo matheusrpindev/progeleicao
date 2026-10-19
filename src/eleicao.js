@@ -115,11 +115,14 @@ function criarEleicao(db) {
     })();
   }
 
+  // Urnas liberadas que ainda não registraram o voto.
+  const liberacoesPendentes = () => db.prepare('SELECT urna FROM liberacoes WHERE pendente IS NOT NULL ORDER BY urna').all().map((l) => l.urna);
+
   // Retorna { encerrada: true } ou { encerrada: false, pendentes: [urnas] }
   // quando há urna liberada sem voto e o encerramento não foi forçado.
   function encerrar({ forcar = false } = {}) {
     if (status() !== 'aberta') throw new ErroEleicao('A votação não está aberta.');
-    const pendentes = db.prepare('SELECT urna FROM liberacoes WHERE pendente IS NOT NULL ORDER BY urna').all().map((l) => l.urna);
+    const pendentes = liberacoesPendentes();
     if (pendentes.length && !forcar) return { encerrada: false, pendentes };
     db.transaction(() => {
       gravarConfig(db, 'status', 'encerrada');
@@ -128,7 +131,26 @@ function criarEleicao(db) {
     return { encerrada: true, pendentes };
   }
 
-  return { estado, status, listarChapas, salvarDados, criarChapa, editarChapa, excluirChapa, emitirZeresima, abrir, encerrar };
+  function exigirEncerrada() {
+    if (status() !== 'encerrada') throw new ErroEleicao('Só é possível iniciar uma nova eleição depois de encerrar a atual.');
+  }
+
+  // Volta à preparação sem votos nem liberações. Mantém a senha, os nomes da
+  // escola e da eleição e, se pedido, as chapas. Arquivar antes é com quem chama.
+  function zerar({ apagarChapas = false } = {}) {
+    exigirEncerrada();
+    const fotos = apagarChapas ? db.prepare('SELECT foto FROM chapas').all().map((c) => c.foto) : [];
+    db.transaction(() => {
+      db.prepare('DELETE FROM votos').run();
+      db.prepare('UPDATE liberacoes SET emitidas = 0, pendente = NULL').run();
+      if (apagarChapas) db.prepare('DELETE FROM chapas').run();
+      for (const chave of ['zeresima_em', 'aberta_em', 'encerrada_em', 'hash_final']) gravarConfig(db, chave, null);
+      gravarConfig(db, 'status', 'preparacao');
+    })();
+    fotos.forEach(apagarFoto);
+  }
+
+  return { estado, status, listarChapas, liberacoesPendentes, exigirEncerrada, zerar, salvarDados, criarChapa, editarChapa, excluirChapa, emitirZeresima, abrir, encerrar };
 }
 
 module.exports = { criarEleicao };

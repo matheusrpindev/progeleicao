@@ -36,11 +36,15 @@ function criarAuth(db) {
   }
 
   function entrar(senha) {
-    const guardado = lerConfig(db, 'senha_hash');
-    if (!guardado || typeof senha !== 'string' || !conferirHash(senha, guardado)) return null;
+    if (!conferirSenha(senha)) return null;
     const token = crypto.randomBytes(32).toString('hex');
     sessoes.add(token);
     return token;
+  }
+
+  function conferirSenha(senha) {
+    const guardado = lerConfig(db, 'senha_hash');
+    return Boolean(guardado && typeof senha === 'string' && conferirHash(senha, guardado));
   }
 
   const autenticado = (cabecalhoCookie) => sessoes.has(lerCookies(cabecalhoCookie)[NOME_COOKIE]);
@@ -54,7 +58,7 @@ function criarAuth(db) {
     res.status(401).json({ erro: 'Faça login para continuar.' });
   }
 
-  return { senhaDefinida, definirSenha, entrar, autenticado, sair, exigirLogin, NOME_COOKIE };
+  return { senhaDefinida, definirSenha, conferirSenha, entrar, autenticado, sair, exigirLogin, NOME_COOKIE };
 }
 
 module.exports = { criarAuth };

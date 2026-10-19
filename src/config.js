@@ -11,5 +11,6 @@ module.exports = {
   arquivoBanco: path.join(pastaDados, 'eleicao.db'),
   pastaFotos: path.join(pastaDados, 'fotos'),
   pastaBackup: path.join(pastaDados, 'backup'),
+  pastaArquivo: path.join(pastaDados, 'arquivo'),
   intervaloBackupMs: 60 * 1000,
 };

@@ -91,6 +91,21 @@ function criarRotas({ db, auth, eleicao, urnas, apuracao, votos, backup, tempoRe
     aposMudanca(res);
   });
 
+  admin.post('/nova-eleicao', async (req, res) => {
+    eleicao.exigirEncerrada();
+    if (!auth.conferirSenha(req.body.senha)) throw new ErroEleicao('Senha incorreta.');
+    const pendentes = eleicao.liberacoesPendentes();
+    if (pendentes.length && !req.body.forcar) {
+      return res.status(409).json({ pendentes, erro: `A urna ${pendentes.join(', ')} ficou com uma liberação sem voto registrado: se ela estava desconectada, pode haver um voto guardado nela que ainda não chegou.` });
+    }
+    const arquivo = await backup.arquivar();
+    eleicao.zerar({ apagarChapas: Boolean(req.body.apagarChapas) });
+    db.pragma('wal_checkpoint(TRUNCATE)');
+    await backup.fazerAgora();
+    tempoReal.estadoMudou();
+    res.json({ ...eleicao.estado(), arquivo });
+  });
+
   // ---- Mesário ----
   const mesario = express.Router();
   mesario.use(auth.exigirLogin);

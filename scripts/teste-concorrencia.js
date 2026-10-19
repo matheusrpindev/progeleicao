@@ -210,7 +210,27 @@ async function principal() {
   const ultimo = db.prepare('SELECT * FROM votos ORDER BY id DESC LIMIT 1').get();
   db.prepare('DELETE FROM votos WHERE id = ?').run(ultimo.id);
   conferir(!(await http('GET', '/api/resultado/integridade')).dados.ok, 'voto apagado direto no banco é detectado');
+  const votosAntes = db.prepare('SELECT COUNT(*) AS n FROM votos').get().n;
   db.close();
+
+  console.log('\nNova eleição:');
+  conferir((await http('POST', '/api/admin/nova-eleicao', { senha: 'errada' })).status === 400, 'senha errada não inicia nova eleição');
+  const nova = await http('POST', '/api/admin/nova-eleicao', { senha: 'teste123' });
+  conferir(nova.status === 200 && nova.dados.status === 'preparacao', 'nova eleição iniciada (volta para preparação)');
+  const arquivado = new DatabaseSync(path.join(pastaDados, 'arquivo', nova.dados.arquivo));
+  conferir(arquivado.prepare('SELECT COUNT(*) AS n FROM votos').get().n === votosAntes, `eleição anterior arquivada com os ${votosAntes} votos`);
+  arquivado.close();
+  conferir(nova.dados.chapas.length === CHAPAS.length, 'chapas mantidas');
+  const z2 = await http('POST', '/api/admin/zeresima');
+  conferir(z2.status === 200 && z2.dados.totalVotos === 0 && z2.dados.urnas.every((u) => u.liberacoes === 0), 'nova zerésima: votos e liberações zerados');
+  await http('POST', '/api/admin/abrir');
+  const chegou2 = esperarEvento(urnas[2], 'liberacao');
+  await http('POST', '/api/mesario/liberar/2');
+  const voto2 = await votar(urnas[2], { id: crypto.randomUUID(), token: (await chegou2).token, voto: '20' });
+  await http('POST', '/api/admin/encerrar', {});
+  const r2 = (await http('GET', '/api/resultado')).dados;
+  conferir(voto2.ok && r2.geral.total === 1 && r2.geral.porChapa['20'] === 1 && r2.conferencia.situacao === 'ok' && r2.integridade.ok,
+    'segunda eleição funciona do zero (1 voto, conferência e integridade OK)');
 
   for (const s of Object.values(urnas)) s.close();
   await desligarServidor();
