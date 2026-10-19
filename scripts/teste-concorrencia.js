@@ -12,7 +12,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { io } = require('socket.io-client');
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 
 const TOTAL_VOTOS = 500;
 const NUM_URNAS = 4;
@@ -39,7 +39,7 @@ function conferir(condicao, descricao) {
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function ligarServidor() {
-  servidor = spawn(process.execPath, [path.join(__dirname, '..', 'src', 'server.js')], {
+  servidor = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', path.join(__dirname, '..', 'src', 'server.js')], {
     env: { ...process.env, DATA_DIR: pastaDados, PORT: String(porta) },
     stdio: ['ignore', 'ignore', 'inherit'],
   });
@@ -198,7 +198,7 @@ async function principal() {
   conferir(r.integridade.ok, `integridade: ${r.integridade.mensagem}`);
 
   console.log('\nSigilo, backup e adulteração:');
-  const db = new Database(path.join(pastaDados, 'eleicao.db'));
+  const db = new DatabaseSync(path.join(pastaDados, 'eleicao.db'));
   const colunas = db.prepare('PRAGMA table_info(votos)').all().map((c) => c.name).join(',');
   conferir(colunas === 'id,urna,escolha,hash_anterior,hash', `tabela de votos só tem: ${colunas}`);
   conferir(fs.existsSync(path.join(pastaDados, 'backup', 'eleicao-backup.db')), 'arquivo de backup gravado');
