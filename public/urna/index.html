@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Urna — Eleição do Grêmio</title>
+  <link rel="stylesheet" href="/urna/urna.css">
+</head>
+<body>
+  <div class="urna">
+    <section class="tela" id="tela">
+      <!-- Tela bloqueada -->
+      <div class="vista bloqueada" id="vistaBloqueada">
+        <div class="numero-urna" id="numeroUrna"></div>
+        <div class="mensagem-bloqueio" id="mensagemBloqueio">Conectando ao servidor…</div>
+      </div>
+
+      <!-- Tela de votação -->
+      <div class="vista votacao oculto" id="vistaVotacao">
+        <div class="topo-voto">SEU VOTO PARA</div>
+        <div class="cargo">Grêmio Estudantil</div>
+        <div class="corpo-voto">
+          <div class="dados-voto">
+            <div class="linha-numero">
+              <span class="rotulo">Número:</span>
+              <span class="digito" id="d0"></span><span class="digito" id="d1"></span>
+            </div>
+            <div class="linha-nome oculto" id="linhaNome"><span class="rotulo">Chapa:</span> <b id="nomeChapa"></b></div>
+            <div class="aviso-voto oculto" id="avisoErrado">NÚMERO ERRADO</div>
+            <div class="aviso-voto grande oculto" id="avisoNulo">VOTO NULO</div>
+            <div class="aviso-voto grande oculto" id="avisoBranco">VOTO EM BRANCO</div>
+          </div>
+          <div class="foto oculto" id="caixaFoto"><img id="fotoChapa" alt=""></div>
+        </div>
+        <div class="instrucoes oculto" id="instrucoes">
+          <div>Aperte a tecla:</div>
+          <div><span class="cor-confirma">CONFIRMA</span> para CONFIRMAR este voto</div>
+          <div><span class="cor-corrige">CORRIGE</span> para REINICIAR este voto</div>
+        </div>
+      </div>
+
+      <!-- Fim -->
+      <div class="vista fim oculto" id="vistaFim">FIM</div>
+
+      <div class="conexao" id="conexao">offline</div>
+    </section>
+
+    <section class="teclado" id="teclado">
+      <div class="marca">GRÊMIO ESTUDANTIL</div>
+      <div class="numeros">
+        <button type="button" data-tecla="1">1</button>
+        <button type="button" data-tecla="2">2</button>
+        <button type="button" data-tecla="3">3</button>
+        <button type="button" data-tecla="4">4</button>
+        <button type="button" data-tecla="5">5</button>
+        <button type="button" data-tecla="6">6</button>
+        <button type="button" data-tecla="7">7</button>
+        <button type="button" data-tecla="8">8</button>
+        <button type="button" data-tecla="9">9</button>
+        <button type="button" data-tecla="0" class="zero">0</button>
+      </div>
+      <div class="especiais">
+        <button type="button" data-tecla="branco" class="branco">BRANCO</button>
+        <button type="button" data-tecla="corrige" class="corrige">CORRIGE</button>
+        <button type="button" data-tecla="confirma" class="confirma">CONFIRMA</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/urna/urna.js"></script>
+</body>
+</html>

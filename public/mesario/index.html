@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mesário — Eleição do Grêmio</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/mesario/mesario.css">
+</head>
+<body>
+  <header class="topo">
+    <h1>Mesa receptora</h1>
+    <nav><a href="/admin">Admin</a><a href="/mesario" class="atual">Mesário</a><a href="/resultado">Resultado</a></nav>
+    <button type="button" onclick="sair()">Sair</button>
+  </header>
+
+  <main>
+    <div class="cabecalho">
+      <div>
+        <span id="status" class="selo"></span>
+        <span id="conexao" class="conexao">Conectando…</span>
+      </div>
+      <div class="total">Total de votantes: <b id="total">0</b></div>
+    </div>
+    <div id="aviso" class="aviso oculto"></div>
+    <div id="urnas" class="urnas"></div>
+    <p class="dica">Libere um voto para cada eleitor que chegar. A urna só aceita <b>um</b> voto por liberação.
+      Esta tela mostra apenas <b>quantos</b> votos cada urna recebeu — nunca em quem se votou.</p>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/comum.js"></script>
+  <script src="/mesario/mesario.js"></script>
+</body>
+</html>

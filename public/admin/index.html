@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administração — Eleição do Grêmio</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+  <header class="topo">
+    <h1>Administração da eleição</h1>
+    <nav><a href="/admin" class="atual">Admin</a><a href="/mesario">Mesário</a><a href="/resultado">Resultado</a></nav>
+    <button type="button" onclick="sair()">Sair</button>
+  </header>
+
+  <main>
+    <section class="cartao">
+      <h2>Andamento <span id="status" class="selo"></span></h2>
+      <p id="resumo" class="suave"></p>
+      <div class="acoes">
+        <button type="button" id="btZeresima">1. Emitir zerésima</button>
+        <button type="button" id="btAbrir" class="sucesso">2. Abrir votação</button>
+        <button type="button" id="btEncerrar" class="perigo">3. Encerrar votação</button>
+      </div>
+      <div id="avisoAndamento" class="aviso oculto"></div>
+    </section>
+
+    <section class="cartao">
+      <h2>Dados da eleição</h2>
+      <form id="formDados">
+        <label for="escola">Nome da escola</label>
+        <input type="text" id="escola" maxlength="120">
+        <label for="eleicao">Nome da eleição</label>
+        <input type="text" id="eleicao" maxlength="120" placeholder="Ex.: Eleição do Grêmio Estudantil 2026">
+        <div class="acoes"><button type="submit" class="editavel">Salvar dados</button></div>
+        <div id="avisoDados" class="aviso oculto"></div>
+      </form>
+    </section>
+
+    <section class="cartao">
+      <h2>Chapas</h2>
+      <table>
+        <thead><tr><th>Foto</th><th>Número</th><th>Nome da chapa</th><th class="editavel">Ações</th></tr></thead>
+        <tbody id="listaChapas"></tbody>
+      </table>
+
+      <form id="formChapa" class="editavel">
+        <h3 id="tituloChapa">Cadastrar nova chapa</h3>
+        <label for="numero">Número (2 dígitos)</label>
+        <input type="text" id="numero" inputmode="numeric" maxlength="2" pattern="\d{2}" required class="curto">
+        <label for="nome">Nome da chapa</label>
+        <input type="text" id="nome" maxlength="80" required>
+        <label for="foto">Foto ou logo (opcional)</label>
+        <input type="file" id="foto" accept="image/png,image/jpeg,image/webp">
+        <label id="rotuloRemover" class="oculto normal"><input type="checkbox" id="removerFoto"> Remover a foto atual</label>
+        <div class="acoes">
+          <button type="submit" id="btSalvarChapa">Cadastrar chapa</button>
+          <button type="button" id="btCancelarEdicao" class="secundario oculto">Cancelar edição</button>
+        </div>
+        <div id="avisoChapa" class="aviso oculto"></div>
+      </form>
+    </section>
+  </main>
+
+  <script src="/js/comum.js"></script>
+  <script src="/admin/admin.js"></script>
+</body>
+</html>

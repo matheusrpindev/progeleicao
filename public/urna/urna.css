@@ -1,0 +1,122 @@
+:root {
+  --tela-fundo: #ffffff;
+  --tela-texto: #000000;
+  --corpo: #2b2b2b;
+  --tecla: #111111;
+  --tecla-texto: #ffffff;
+  --branco: #f5f5f5;
+  --corrige: #e8701a;
+  --confirma: #1f9a3e;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--corpo);
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+.oculto { display: none !important; }
+
+.urna {
+  display: flex;
+  gap: 2vmin;
+  height: 100vh;
+  padding: 2vmin;
+}
+
+/* ---------- Tela ---------- */
+.tela {
+  position: relative;
+  flex: 1 1 62%;
+  background: var(--tela-fundo);
+  color: var(--tela-texto);
+  border: 1vmin solid #000;
+  border-radius: 1vmin;
+  overflow: hidden;
+}
+.vista { position: absolute; inset: 0; padding: 3vmin 4vmin; }
+
+.bloqueada { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 4vmin; }
+.numero-urna { font-size: 5vmin; font-weight: 700; color: #444; }
+.mensagem-bloqueio { font-size: 7vmin; font-weight: 700; line-height: 1.2; }
+
+.votacao { display: flex; flex-direction: column; }
+.topo-voto { font-size: 3.4vmin; font-weight: 700; }
+.cargo { font-size: 6vmin; font-weight: 700; text-align: center; margin: 3vmin 0 4vmin; }
+.corpo-voto { display: flex; flex: 1; gap: 3vmin; min-height: 0; }
+.dados-voto { flex: 1; }
+.rotulo { font-size: 3.6vmin; margin-right: 2vmin; }
+.linha-numero { display: flex; align-items: center; margin-bottom: 4vmin; }
+.digito {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 9vmin;
+  height: 11vmin;
+  margin-right: 1.2vmin;
+  border: 0.4vmin solid #000;
+  font-size: 8vmin;
+  font-weight: 700;
+}
+.digito.cursor { animation: piscar 1s steps(1) infinite; }
+@keyframes piscar { 50% { background: #000; } }
+.linha-nome { font-size: 4.6vmin; margin-bottom: 3vmin; }
+.linha-nome b { font-size: 5.2vmin; }
+.aviso-voto { font-size: 4.4vmin; font-weight: 700; margin: 2vmin 0; }
+.aviso-voto.grande { font-size: 8vmin; animation: piscar-texto 1.2s steps(1) infinite; }
+@keyframes piscar-texto { 50% { opacity: .25; } }
+
+.foto { flex: 0 0 auto; width: 26vmin; }
+.foto img { width: 26vmin; height: 30vmin; object-fit: contain; border: 0.3vmin solid #000; background: #fff; }
+
+.instrucoes {
+  border-top: 0.4vmin solid #000;
+  padding-top: 1.6vmin;
+  font-size: 3.2vmin;
+  line-height: 1.35;
+}
+.cor-confirma { color: var(--confirma); font-weight: 700; }
+.cor-corrige { color: var(--corrige); font-weight: 700; }
+
+.fim { display: flex; justify-content: center; align-items: center; font-size: 30vmin; font-weight: 700; letter-spacing: 2vmin; }
+
+.conexao { position: absolute; right: 1.2vmin; bottom: 0.8vmin; font-size: 1.8vmin; color: #777; }
+.conexao::before { content: "● "; color: #16a34a; }
+.conexao.off::before { color: #dc2626; }
+
+/* ---------- Teclado ---------- */
+.teclado {
+  flex: 0 0 36%;
+  max-width: 62vh;
+  display: flex;
+  flex-direction: column;
+  gap: 2vmin;
+  padding: 2.4vmin;
+  background: #1c1c1c;
+  border-radius: 1.5vmin;
+}
+.marca { color: #ddd; text-align: center; font-size: 2.4vmin; letter-spacing: .3vmin; font-weight: 700; }
+.teclado button {
+  border: 0;
+  border-radius: 1vmin;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0.6vmin 0 rgba(0,0,0,.6);
+}
+.teclado button:active, .teclado button.apertada { transform: translateY(0.5vmin); box-shadow: 0 0.1vmin 0 rgba(0,0,0,.6); }
+.numeros { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.8vmin; }
+.numeros button { background: var(--tecla); color: var(--tecla-texto); font-size: 7vmin; border: 0.3vmin solid #444; }
+.numeros .zero { grid-column: 2; }
+.especiais { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 1.4vmin; height: 15vmin; }
+.especiais button { font-size: 2.5vmin; color: #000; }
+.especiais .branco { background: var(--branco); }
+.especiais .corrige { background: var(--corrige); }
+.especiais .confirma { background: var(--confirma); height: 100%; font-size: 2.7vmin; }
+
+.teclado.inativo button { opacity: .55; }

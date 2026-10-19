@@ -1,0 +1,30 @@
+.cabecalho { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.total { font-size: 24px; }
+.total b { font-size: 34px; }
+.conexao { margin-left: 10px; color: var(--verde); font-size: 14px; }
+.conexao.off { color: var(--vermelho); font-weight: 700; }
+
+.urnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.urna {
+  background: var(--cartao);
+  border: 3px solid var(--borda);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.urna h2 { margin: 0; font-size: 22px; }
+.urna .estado { margin: 10px 0; padding: 8px; border-radius: 6px; font-weight: 700; font-size: 18px; }
+.urna .votos { font-size: 15px; color: var(--suave); }
+.urna .votos b { font-size: 30px; color: var(--texto); display: block; }
+.urna button { width: 100%; margin-top: 12px; padding: 16px; font-size: 20px; }
+
+.urna.desconectada { border-color: #9ca3af; }
+.urna.desconectada .estado { background: #e5e7eb; color: #374151; }
+.urna.livre { border-color: var(--primaria); }
+.urna.livre .estado { background: #dbeafe; color: var(--primaria-escura); }
+.urna.aguardando { border-color: var(--amarelo); }
+.urna.aguardando .estado { background: var(--amarelo-fundo); color: var(--amarelo); }
+.urna.votando { border-color: var(--verde); }
+.urna.votando .estado { background: var(--verde-fundo); color: var(--verde); }
+
+.dica { margin-top: 20px; color: var(--suave); }

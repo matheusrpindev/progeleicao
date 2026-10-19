@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zerésima — Eleição do Grêmio</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/documento.css">
+</head>
+<body>
+  <main>
+    <div class="nao-imprimir acoes barra">
+      <button type="button" onclick="window.print()">Imprimir zerésima</button>
+      <a class="botao secundario" href="/admin">Voltar ao Admin</a>
+    </div>
+    <div id="aviso" class="aviso oculto"></div>
+    <article id="documento" class="documento oculto"></article>
+  </main>
+  <script src="/js/comum.js"></script>
+  <script>
+    exigirLogin(async () => {
+      try {
+        const z = await api('POST', '/api/admin/zeresima');
+        const chapas = z.chapas.map((c) => `<th class="num">${esc(c.numero)}</th>`).join('');
+        const linhas = z.urnas.map((u) => `<tr><td>Urna ${u.urna}</td>${z.chapas.map(() => '<td class="num">0</td>').join('')}
+          <td class="num">0</td><td class="num">0</td><td class="num"><b>${u.votos}</b></td><td class="num">${u.liberacoes}</td></tr>`).join('');
+        const doc = document.getElementById('documento');
+        doc.innerHTML = `
+          <header>
+            <p class="escola">${esc(z.escola || 'Escola')}</p>
+            <h1>ZERÉSIMA</h1>
+            <p class="subtitulo">${esc(z.eleicao || 'Eleição do Grêmio Estudantil')}</p>
+          </header>
+          <p>Relatório emitido em <b>${formatarDataHora(z.emitidaEm)}</b>, antes da abertura da votação, para comprovar
+            que todas as urnas estão <b>sem nenhum voto registrado</b>. Os números abaixo foram lidos diretamente do banco de dados.</p>
+          <h2>Chapas concorrentes</h2>
+          <table>
+            <thead><tr><th>Número</th><th>Chapa</th><th class="num">Votos</th></tr></thead>
+            <tbody>${z.chapas.map((c) => `<tr><td>${esc(c.numero)}</td><td>${esc(c.nome)}</td><td class="num">0</td></tr>`).join('')}</tbody>
+          </table>
+          <h2>Situação das urnas</h2>
+          <table>
+            <thead><tr><th>Urna</th>${chapas}<th class="num">Brancos</th><th class="num">Nulos</th><th class="num">Total de votos</th><th class="num">Liberações</th></tr></thead>
+            <tbody>${linhas}</tbody>
+            <tfoot><tr><th>Total geral</th><th colspan="${z.chapas.length + 2}"></th><th class="num">${z.totalVotos}</th><th></th></tr></tfoot>
+          </table>
+          <p class="hash">Hash inicial da cadeia de votos: <code>${esc(z.hashInicial)}</code></p>
+          <section class="assinaturas">
+            <div><span></span>Presidente da Comissão Eleitoral</div>
+            <div><span></span>Mesário</div>
+            ${z.chapas.map((c) => `<div><span></span>Fiscal da chapa ${esc(c.numero)} — ${esc(c.nome)}</div>`).join('')}
+          </section>`;
+        doc.classList.remove('oculto');
+      } catch (erro) {
+        mostrarAviso(document.getElementById('aviso'), 'erro', erro.message);
+      }
+    });
+  </script>
+</body>
+</html>

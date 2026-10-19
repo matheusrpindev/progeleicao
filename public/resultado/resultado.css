@@ -1,0 +1,12 @@
+.documento p { text-align: justify; }
+.documento header p { text-align: center; }
+.documento .boletins { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.documento .boletins h3 { font-size: 14px; margin: 0 0 4px; }
+.documento .conferencia li { margin: 3px 0; }
+.documento .destaque td { font-weight: 700; }
+.marca-ok { color: var(--verde); font-weight: 700; }
+.marca-erro { color: var(--vermelho); font-weight: 700; }
+
+@media print {
+  .marca-ok, .marca-erro { color: #000; }
+}

@@ -1,0 +1,30 @@
+/* Documentos impressos: zerésima e ata de resultado. */
+.barra { margin-bottom: 16px; }
+.documento {
+  background: #fff;
+  border: 1px solid var(--borda);
+  padding: 32px 40px;
+  max-width: 820px;
+  margin: 0 auto;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 15px;
+}
+.documento header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 18px; padding-bottom: 10px; }
+.documento .escola { margin: 0; font-size: 16px; text-transform: uppercase; letter-spacing: .5px; }
+.documento h1 { margin: 6px 0 2px; font-size: 26px; letter-spacing: 2px; }
+.documento .subtitulo { margin: 0; font-size: 17px; }
+.documento h2 { font-size: 16px; margin: 22px 0 8px; text-transform: uppercase; }
+.documento table { font-size: 14px; }
+.documento th, .documento td { border-color: #000; }
+.documento .hash { font-size: 12px; word-break: break-all; margin-top: 18px; }
+.documento code { font-size: 11px; }
+.assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 48px; margin-top: 56px; }
+.assinaturas div { text-align: center; font-size: 13px; }
+.assinaturas span { display: block; border-top: 1px solid #000; margin-bottom: 4px; }
+
+@media print {
+  @page { size: A4; margin: 15mm; }
+  .documento { border: 0; padding: 0; max-width: none; }
+  .documento table, .assinaturas { break-inside: avoid; }
+  .documento h2 { break-after: avoid; }
+}

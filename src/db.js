@@ -1,0 +1,69 @@
+const fs = require('fs');
+const Database = require('better-sqlite3');
+const config = require('./config');
+
+const ESQUEMA = `
+CREATE TABLE IF NOT EXISTS config (
+  chave TEXT PRIMARY KEY,
+  valor TEXT
+);
+
+CREATE TABLE IF NOT EXISTS chapas (
+  numero TEXT PRIMARY KEY CHECK (numero GLOB '[0-9][0-9]'),
+  nome   TEXT NOT NULL,
+  foto   TEXT
+);
+
+-- Só contadores e o token da liberação em aberto: sem horário e sem
+-- histórico, para que nada aqui possa ser cruzado com a tabela de votos.
+CREATE TABLE IF NOT EXISTS liberacoes (
+  urna     INTEGER PRIMARY KEY,
+  emitidas INTEGER NOT NULL DEFAULT 0,
+  pendente TEXT
+);
+
+-- Sigilo: nenhum horário e nenhuma coluna sequencial. WITHOUT ROWID faz a
+-- tabela ser guardada pela ordem do id aleatório, não pela ordem de chegada.
+-- O encadeamento de hash também segue a ordem do id (ver votos.js).
+CREATE TABLE IF NOT EXISTS votos (
+  id            TEXT PRIMARY KEY,
+  urna          INTEGER NOT NULL,
+  escolha       TEXT NOT NULL,
+  hash_anterior TEXT NOT NULL,
+  hash          TEXT NOT NULL
+) WITHOUT ROWID;
+`;
+
+function abrirBanco(arquivo = config.arquivoBanco) {
+  fs.mkdirSync(config.pastaDados, { recursive: true });
+  const db = new Database(arquivo);
+  db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = FULL');
+  db.pragma('busy_timeout = 5000');
+  // Sobrescreve com zeros o conteúdo apagado/alterado, para que versões
+  // antigas das linhas (que revelariam a ordem dos votos) não fiquem no arquivo.
+  db.pragma('secure_delete = ON');
+  db.exec(ESQUEMA);
+
+  const inserirUrna = db.prepare('INSERT OR IGNORE INTO liberacoes (urna) VALUES (?)');
+  const inserirConfig = db.prepare('INSERT OR IGNORE INTO config (chave, valor) VALUES (?, ?)');
+  db.transaction(() => {
+    for (let i = 1; i <= config.numUrnas; i++) inserirUrna.run(i);
+    inserirConfig.run('status', 'preparacao');
+    inserirConfig.run('escola', '');
+    inserirConfig.run('eleicao', '');
+  })();
+  return db;
+}
+
+function lerConfig(db, chave) {
+  const linha = db.prepare('SELECT valor FROM config WHERE chave = ?').get(chave);
+  return linha ? linha.valor : null;
+}
+
+function gravarConfig(db, chave, valor) {
+  db.prepare('INSERT INTO config (chave, valor) VALUES (?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor')
+    .run(chave, valor);
+}
+
+module.exports = { abrirBanco, lerConfig, gravarConfig };

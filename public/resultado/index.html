@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resultado — Eleição do Grêmio</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/documento.css">
+  <link rel="stylesheet" href="/resultado/resultado.css">
+</head>
+<body>
+  <header class="topo">
+    <h1>Resultado da eleição</h1>
+    <nav><a href="/admin">Admin</a><a href="/mesario">Mesário</a><a href="/resultado" class="atual">Resultado</a></nav>
+    <button type="button" onclick="sair()">Sair</button>
+  </header>
+
+  <main>
+    <div id="aviso" class="aviso oculto"></div>
+
+    <div id="painel" class="oculto">
+      <section class="cartao nao-imprimir">
+        <div class="acoes">
+          <button type="button" onclick="window.print()">Imprimir ata</button>
+          <a class="botao secundario" href="/api/resultado/csv">Exportar CSV</a>
+          <a class="botao secundario" href="/api/resultado/json">Exportar JSON</a>
+          <button type="button" id="btIntegridade" class="secundario">Verificar integridade</button>
+          <button type="button" id="btAtualizar" class="secundario">Atualizar</button>
+        </div>
+        <div id="conferenciaTela"></div>
+        <div id="integridadeTela"></div>
+      </section>
+
+      <article id="ata" class="documento"></article>
+    </div>
+  </main>
+
+  <script src="/js/comum.js"></script>
+  <script src="/resultado/resultado.js"></script>
+</body>
+</html>

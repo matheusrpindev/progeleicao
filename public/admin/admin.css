@@ -1,0 +1,9 @@
+.suave { color: var(--suave); }
+h3 { margin: 22px 0 4px; font-size: 16px; }
+input.curto { max-width: 90px; font-size: 20px; text-align: center; }
+label.normal { font-weight: 400; }
+.miniatura { width: 48px; height: 48px; object-fit: contain; background: #f3f4f6; border-radius: 4px; display: block; }
+.numero-chapa { font-size: 22px; font-weight: 700; }
+td .acoes { margin: 0; }
+td button { padding: 6px 12px; font-size: 14px; }
+.bloqueado .editavel { display: none; }
