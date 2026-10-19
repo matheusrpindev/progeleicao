@@ -41,9 +41,9 @@ function gerarUuid() {
 
 // ---------- Som ----------
 /*
- * Por padrão os sons são sintetizados (Web Audio, sem arquivos), imitando a
- * urna: um "bip" curto a cada tecla e o "pililili" (trinado rápido entre duas
- * notas agudas) ao confirmar. Para ter o som idêntico ao original, coloque
+ * Por padrão os sons são sintetizados (Web Audio, sem arquivos) com as mesmas
+ * frequências e tempos da urna: um "bip" curto a cada tecla e o "pililili" ao
+ * confirmar. Para ter o som idêntico ao original, coloque
  * gravações em public/urna/sons/tecla.mp3 e public/urna/sons/confirma.mp3:
  * se existirem, elas são usadas no lugar da síntese.
  */
@@ -56,29 +56,37 @@ for (const nome of ['tecla', 'confirma']) {
     .catch(() => {});
 }
 
-// Notas [frequência Hz, início s, duração s] de cada som sintetizado.
-const NOTAS_TECLA = [[2350, 0, 0.09]];
-const NOTAS_CONFIRMA = Array.from({ length: 24 }, (_, i) => [i % 2 ? 2700 : 2050, i * 0.047, 0.045]);
+/*
+ * Medidas tiradas de gravações da urna eletrônica (análise de espectro):
+ * tom puro (senoide); a confirmação alterna 2306 Hz e 2206 Hz a cada ~97 ms
+ * por 0,70 s, e a tecla é um bip de 2306 Hz com ~20 ms.
+ * Cada som é uma lista de trechos [frequência Hz, duração s] tocados em sequência.
+ */
+const AGUDO = 2306;
+const GRAVE = 2206;
+const NOTAS_TECLA = [[AGUDO, 0.022]];
+const NOTAS_CONFIRMA = [[AGUDO, 0.025], ...Array.from({ length: 7 }, (_, i) => [i % 2 ? AGUDO : GRAVE, 0.0967])];
 
-function agendarNotas(ctx, notas, volume = 0.18) {
-  const filtro = ctx.createBiquadFilter(); // suaviza a onda quadrada, como o alto-falante pequeno da urna
-  filtro.type = 'lowpass';
-  filtro.frequency.value = 5000;
-  filtro.connect(ctx.destination);
-  for (const [freq, inicio, duracao] of notas) {
-    const t = ctx.currentTime + inicio;
-    const osc = ctx.createOscillator();
-    const ganho = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.value = freq;
-    ganho.gain.setValueAtTime(0, t);
-    ganho.gain.linearRampToValueAtTime(volume, t + 0.003);
-    ganho.gain.setValueAtTime(volume, t + duracao - 0.003);
-    ganho.gain.linearRampToValueAtTime(0, t + duracao);
-    osc.connect(ganho).connect(filtro);
-    osc.start(t);
-    osc.stop(t + duracao + 0.01);
+// Um único oscilador que muda de frequência sem cortar a onda, como na urna.
+function agendarNotas(ctx, notas, volume = 0.3) {
+  const inicio = ctx.currentTime + 0.01;
+  const total = notas.reduce((soma, [, duracao]) => soma + duracao, 0);
+  const osc = ctx.createOscillator();
+  const ganho = ctx.createGain();
+  osc.type = 'sine';
+  let t = inicio;
+  for (const [freq, duracao] of notas) {
+    osc.frequency.setValueAtTime(freq, t);
+    t += duracao;
   }
+  const saida = Math.min(0.04, total / 4); // final suave (~40 ms no "pililili")
+  ganho.gain.setValueAtTime(0, inicio);
+  ganho.gain.linearRampToValueAtTime(volume, inicio + 0.003);
+  ganho.gain.setValueAtTime(volume, inicio + total - saida);
+  ganho.gain.linearRampToValueAtTime(0, inicio + total);
+  osc.connect(ganho).connect(ctx.destination);
+  osc.start(inicio);
+  osc.stop(inicio + total + 0.02);
 }
 
 async function tocar(nome, notas) {
