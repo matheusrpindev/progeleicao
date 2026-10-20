@@ -19,17 +19,25 @@ const FONTE = {
 const letrasGrandes = (texto) =>
   [0, 1, 2, 3, 4].map((linha) => [...texto].map((c) => FONTE[c]?.[linha] ?? ' ').join(' ')).join('\n');
 
-// IPv4 da rede local, priorizando as faixas usadas por roteadores domésticos.
-function ipsLocais() {
-  const ips = Object.values(os.networkInterfaces()).flat()
-    .filter((i) => i && i.family === 'IPv4' && !i.internal)
-    .map((i) => i.address);
-  const prioridade = (ip) => (ip.startsWith('192.168.') ? 0 : ip.startsWith('10.') ? 1 : /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ? 2 : 3);
-  return ips.sort((a, b) => prioridade(a) - prioridade(b));
+// Placas de rede "de mentira" criadas por VirtualBox, VMware, WSL, Hyper-V, Docker, VPNs...
+// As urnas nunca alcançam o servidor por elas (o VirtualBox, por exemplo, usa 192.168.56.1).
+const VIRTUAL = /virtual|vbox|vmware|vmnet|vethernet|hyper-v|wsl|docker|br-|veth|loopback|bluetooth|tailscale|zerotier|hamachi|vpn|tap|tun/i;
+
+// Endereços IPv4 da rede local ({ ip, placa }), do mais provável ao menos provável:
+// placas reais antes das virtuais e, entre elas, as faixas de roteadores domésticos.
+function enderecosLocais(interfaces = os.networkInterfaces()) {
+  const faixa = (ip) => (ip.startsWith('192.168.') ? 0 : ip.startsWith('10.') ? 1 : /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ? 2 : 3);
+  const prioridade = (e) => (VIRTUAL.test(e.placa) ? 10 : 0) + faixa(e.ip);
+  return Object.entries(interfaces)
+    .flatMap(([placa, lista]) => (lista || []).filter((i) => i.family === 'IPv4' && !i.internal).map((i) => ({ ip: i.address, placa })))
+    .sort((a, b) => prioridade(a) - prioridade(b));
 }
 
+const ipsLocais = () => enderecosLocais().map((e) => e.ip);
+
 function mostrarBanner(porta) {
-  const ips = ipsLocais();
+  const enderecos = enderecosLocais();
+  const ips = enderecos.map((e) => e.ip);
   const linha = '='.repeat(78);
   console.log(`\n${linha}\n  SISTEMA DE VOTAÇÃO LIGADO — NÃO FECHE ESTA JANELA\n${linha}\n`);
   if (!ips.length) {
@@ -38,9 +46,12 @@ function mostrarBanner(porta) {
   } else {
     console.log('  Nas urnas, digite no navegador o endereço:\n');
     console.log(letrasGrandes(`${ips[0]}:${porta}`).replace(/^/gm, '  '));
-    console.log(`\n    Endereço completo das urnas:  http://${ips[0]}:${porta}/urna`);
+    console.log(`\n    Endereço completo das urnas:  http://${ips[0]}:${porta}/urna   (placa de rede: ${enderecos[0].placa})`);
     console.log('    (cada urna pede o código de vinculação que aparece na tela do Mesário)');
-    if (ips.length > 1) console.log(`\n  (Outros endereços deste computador: ${ips.slice(1).join(', ')})`);
+    if (enderecos.length > 1) {
+      console.log('\n  Se as urnas não conectarem, tente os outros endereços deste computador:');
+      for (const e of enderecos.slice(1)) console.log(`    http://${e.ip}:${porta}/urna   (placa de rede: ${e.placa})`);
+    }
   }
   console.log('\n  Neste computador (mesário):');
   console.log(`    Mesário:    http://localhost:${porta}/mesario`);
@@ -49,4 +60,4 @@ function mostrarBanner(porta) {
   console.log(`\n${linha}\n`);
 }
 
-module.exports = { mostrarBanner, ipsLocais };
+module.exports = { mostrarBanner, ipsLocais, enderecosLocais };
