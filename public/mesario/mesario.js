@@ -7,7 +7,10 @@ const ROTULOS = {
   votando: 'Votando',
 };
 
+let ultimoPainel = null;
+
 function render(painel) {
+  ultimoPainel = painel;
   $('status').className = `selo ${painel.statusVotacao}`;
   $('status').textContent = NOMES_STATUS[painel.statusVotacao];
   $('total').textContent = painel.totalVotantes;
@@ -57,12 +60,39 @@ $('urnas').addEventListener('click', async (e) => {
   const urna = e.target.dataset.urna;
   if (!urna) return;
   e.target.disabled = true;
+  liberar(urna);
+});
+
+async function liberar(urna) {
   try {
     await api('POST', `/api/mesario/liberar/${urna}`);
     $('aviso').classList.add('oculto');
+    $('liberada').textContent = `URNA ${urna} LIBERADA`;
+    $('liberada').classList.remove('oculto');
+    clearTimeout(liberar.timer);
+    liberar.timer = setTimeout(() => $('liberada').classList.add('oculto'), 4000);
   } catch (erro) {
     mostrarAviso($('aviso'), 'erro', erro.message);
   }
+}
+
+/*
+ * Atalho: a tecla " (aspas) libera a próxima urna livre (a de menor número).
+ * No teclado ABNT2 é a tecla abaixo do Esc; sem Shift ela dá ' e também vale.
+ * Teclados com acentuação "internacional" mandam essa tecla como "Dead".
+ * Uma pausa de 1 s evita liberar duas urnas com um toque duplo sem querer.
+ */
+let atalhoLivreEm = 0;
+document.addEventListener('keydown', (e) => {
+  const aspas = e.key === '"' || e.key === "'" || (e.key === 'Dead' && (e.code === 'Quote' || e.code === 'Backquote'));
+  if (!aspas || e.repeat || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea')) return;
+  e.preventDefault();
+  if (!ultimoPainel || Date.now() < atalhoLivreEm) return;
+  atalhoLivreEm = Date.now() + 1000;
+  if (ultimoPainel.statusVotacao !== 'aberta') return mostrarAviso($('aviso'), 'erro', 'A votação não está aberta.');
+  const livre = ultimoPainel.urnas.find((u) => u.vinculada && u.status === 'livre');
+  if (!livre) return mostrarAviso($('aviso'), 'atencao', 'Nenhuma urna livre no momento. Aguarde um eleitor terminar.');
+  liberar(livre.urna);
 });
 
 function conectar() {

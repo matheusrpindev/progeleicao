@@ -76,7 +76,7 @@ Abra a tela do **Mesário**: **http://localhost:3000/mesario**. Ela mostra todas
 
 Para cada pessoa que chegar:
 1. Indique uma urna que esteja **Livre**.
-2. Clique em **Liberar voto** daquela urna. A urna mostra a tela de votação.
+2. Clique em **Liberar voto** daquela urna, ou aperte a tecla **"** (aspas) no teclado do servidor: ela libera a **próxima urna livre** e aparece em letras grandes "URNA 2 LIBERADA", para você indicar ao eleitor. No teclado brasileiro é a tecla logo abaixo do Esc; não precisa segurar o Shift. A urna mostra a tela de votação.
 3. O eleitor digita o número da chapa (aparecem o nome e a foto) e aperta **CONFIRMA** (verde).
    - **BRANCO**: vota em branco.
    - **CORRIGE** (laranja): apaga e começa de novo.

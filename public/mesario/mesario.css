@@ -31,3 +31,5 @@
 .urna button.trocar { background: none; color: var(--suave); font-size: 13px; padding: 6px; margin-top: 6px; text-decoration: underline; font-weight: 400; }
 
 .dica { margin-top: 20px; color: var(--suave); }
+kbd { border: 1px solid var(--borda); border-bottom-width: 3px; border-radius: 4px; padding: 0 6px; background: #fff; font-family: inherit; font-weight: 700; color: var(--texto); }
+.liberada { margin: 0 0 14px; padding: 14px; border-radius: 8px; background: var(--verde); color: #fff; text-align: center; font-size: 34px; font-weight: 700; letter-spacing: 1px; }
