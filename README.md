@@ -1,12 +1,12 @@
 # Urna Eletrônica do Grêmio Estudantil
 
-Sistema para a eleição do grêmio da escola: **1 computador servidor** (que também é a mesa do mesário) e **4 computadores-urna**, todos ligados no mesmo roteador. **Não precisa de internet no dia da eleição.**
+Sistema para a eleição do grêmio da escola: **1 computador servidor** (que também é a mesa do mesário) e **quantos computadores-urna você quiser** (cadastrados no Admin), todos ligados no mesmo roteador. **Não precisa de internet no dia da eleição.**
 
 ---
 
 ## O que você vai precisar
 
-- 5 computadores com Windows 10 ou 11 e o navegador **Google Chrome**.
+- 1 computador servidor e 1 computador por urna, com Windows 10 ou 11 e o navegador **Google Chrome**.
 - 1 roteador (pode ser um roteador comum de casa) e cabos de rede (ou Wi-Fi do roteador).
 - Uma impressora ligada ao computador servidor (para a zerésima e a ata).
 - **Internet só uma vez, antes do dia**, para fazer a instalação.
@@ -34,7 +34,8 @@ Em **http://localhost:3000/admin**:
 
 1. Preencha o **nome da escola** e o **nome da eleição** e clique em **Salvar dados**.
 2. Cadastre cada chapa: **número com 2 dígitos** (ex.: 10, 25), **nome** e, se quiser, a **foto ou logo**.
-3. Confira tudo com calma. Depois que a votação for aberta, **nada disso pode ser alterado**.
+3. Na seção **Urnas**, clique em **+ Adicionar urna** uma vez para cada computador que vai receber votos (pode ser 1, 4, 10…). Cada urna ganha um **código de 6 dígitos**.
+4. Confira tudo com calma. Depois que a votação for aberta, **nada disso pode ser alterado**.
 
 > Faça um ensaio completo antes do dia (pode votar à vontade). Depois do ensaio, encerre a votação e use **Iniciar nova eleição** no Admin (veja o Passo 6): os votos do ensaio são zerados e as chapas continuam cadastradas.
 
@@ -42,24 +43,21 @@ Em **http://localhost:3000/admin**:
 
 ## 2. Ligando tudo no dia
 
-1. Ligue o roteador e conecte os 5 computadores nele. **Não deixe outros aparelhos (celulares de alunos etc.) entrarem nessa rede.**
+1. Ligue o roteador e conecte o servidor e os computadores-urna nele. **Não deixe outros aparelhos (celulares de alunos etc.) entrarem nessa rede.**
 2. No servidor, dê dois cliques em **`iniciar.bat`**. **Não feche essa janela preta durante a eleição.**
 3. Anote o endereço que aparece em letras grandes (ex.: `192.168.0.10:3000`).
-4. Em **cada urna**, abra o Chrome e digite o endereço com o número da urna no final:
-   - Urna 1: `http://192.168.0.10:3000/urna?id=1`
-   - Urna 2: `http://192.168.0.10:3000/urna?id=2`
-   - Urna 3: `http://192.168.0.10:3000/urna?id=3`
-   - Urna 4: `http://192.168.0.10:3000/urna?id=4`
-
-   (troque `192.168.0.10` pelo endereço que apareceu na **sua** tela)
-5. Aperte **F11** para deixar o Chrome em tela cheia.
+4. Em **cada urna**, abra o Chrome e digite o endereço das urnas. É o **mesmo endereço para todas**: `http://192.168.0.10:3000/urna` (troque `192.168.0.10` pelo endereço que apareceu na **sua** tela; ele também aparece no Admin, na seção Urnas).
+5. **Vincule cada computador à sua urna (só na primeira vez):** a urna mostra "Vincular este computador a uma urna". Abra a tela do **Mesário** no servidor: cada urna sem computador mostra um **código de 6 dígitos**. Digite o código no teclado da urna e aperte **CONFIRMA**.
+   - Cada urna aceita **um único computador**: depois de usado, o código deixa de valer, e nenhum outro computador consegue abrir aquela urna.
+   - O vínculo fica guardado no Chrome daquele computador e vale para as próximas eleições. Para usar outro computador, veja "Problemas".
+6. Aperte **F11** para deixar o Chrome em tela cheia.
    - **Melhor ainda (modo quiosque):** crie um atalho na área de trabalho da urna com o destino abaixo. Assim o eleitor não consegue sair da tela de votação.
      ```
-     "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk "http://192.168.0.10:3000/urna?id=1"
+     "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk "http://192.168.0.10:3000/urna"
      ```
      Para sair do modo quiosque: **Alt + F4**.
-6. Nas configurações de energia do Windows das urnas, coloque **"Desligar a tela: Nunca"** e **"Suspender: Nunca"**.
-7. Ligue o som (caixinha ou alto-falante) das urnas: o "piiii" de confirmação ajuda o mesário a saber que o voto terminou.
+7. Nas configurações de energia do Windows das urnas, coloque **"Desligar a tela: Nunca"** e **"Suspender: Nunca"**.
+8. Ligue o som (caixinha ou alto-falante) das urnas: o "piiii" de confirmação ajuda o mesário a saber que o voto terminou.
 
 Cada urna deve mostrar **"A votação ainda não foi aberta"** e, no cantinho de baixo, **"online"**.
 
@@ -74,7 +72,7 @@ No **Admin**, clique em **1. Emitir zerésima**. Abre um relatório mostrando qu
 No **Admin**, clique em **2. Abrir votação**. As urnas passam a mostrar **"Aguardando liberação do mesário"**.
 
 ### Passo 3: Liberar cada voto
-Abra a tela do **Mesário**: **http://localhost:3000/mesario**. Ela mostra as 4 urnas e o **total de votantes**.
+Abra a tela do **Mesário**: **http://localhost:3000/mesario**. Ela mostra todas as urnas e o **total de votantes**.
 
 Para cada pessoa que chegar:
 1. Indique uma urna que esteja **Livre**.
@@ -95,6 +93,7 @@ O que significa cada situação no painel:
 | **Aguardando eleitor** | Liberada, ninguém digitou nada ainda. |
 | **Votando** | O eleitor está digitando. |
 | **Desconectada** | A urna não está falando com o servidor (veja "Problemas"). |
+| **Sem computador** | Nenhum computador foi vinculado ainda: digite o código mostrado no computador da urna. |
 
 ### Passo 4: Encerrar
 Quando o último eleitor terminar, no **Admin** clique em **3. Encerrar votação**.
@@ -102,7 +101,7 @@ Se alguma urna ainda estiver liberada, o sistema avisa. O ideal é esperar o ele
 
 ### Passo 5: Resultado e ata
 Abra **http://localhost:3000/resultado** (só funciona depois de encerrar):
-- Mostra o **boletim de cada urna** e o **total geral**.
+- Mostra a **chapa vencedora** (com quantos votos teve e a porcentagem dos votos válidos), o **boletim de cada urna** e o **total geral**. Votos válidos são os dados a chapas: brancos e nulos não contam. Se duas chapas empatarem em primeiro, aparece **EMPATE**, e o desempate segue o regulamento da eleição.
 - A **conferência** precisa estar **verde** ("Conferência OK"). Se aparecer aviso amarelo ou vermelho, leia a mensagem: normalmente é uma urna que ficou desconectada com voto guardado (veja abaixo).
 - Clique em **Verificar integridade**: precisa aparecer **"Integridade OK"**. Se aparecer **ADULTERADO**, alguém mexeu no banco de dados por fora do sistema.
 - Clique em **Imprimir ata** e colha as assinaturas.
@@ -130,10 +129,13 @@ Se alguma urna ficou com uma liberação sem voto, o sistema avisa antes: se ela
 
 **Uma urna travou ou a tela ficou estranha**
 - Aperte **F5** (ou feche e abra o Chrome no mesmo endereço). A urna volta ao estado certo. Se ela estava liberada, continua liberada. Nenhum voto confirmado se perde.
-- Se o computador da urna quebrou de vez, use outro computador com o **mesmo endereço** (ex.: `...urna?id=3`). Atenção: se a urna quebrada tinha um voto "aguardando envio", ele só é recuperado ligando aquela máquina na rede de novo.
+- Se o computador da urna quebrou de vez: na tela do **Mesário**, clique em **Trocar computador** naquela urna. Aparece um código novo; abra o endereço das urnas no computador substituto e digite o código. O computador antigo deixa de funcionar como urna. Atenção: se a urna quebrada tinha um voto "aguardando envio", ele só é recuperado ligando aquela máquina na rede e vinculando-a de novo **à mesma urna**.
 
-**Apareceu "Esta urna foi aberta em outro computador ou aba"**
-- O mesmo número de urna foi aberto em dois lugares. Feche a janela antiga. Só a última aberta funciona.
+**A urna pede o código de vinculação de novo**
+- Alguém clicou em "Trocar computador", ou o histórico do Chrome daquele computador foi apagado. Digite o código que aparece no Mesário para aquela urna.
+
+**Apareceu "Esta urna foi aberta em outra aba deste computador"**
+- A urna foi aberta duas vezes no mesmo computador. Feche a janela antiga. Só a última aberta funciona.
 
 **A janela preta do servidor foi fechada, ou o servidor desligou ou travou**
 - Ligue o computador e dê dois cliques em **`iniciar.bat`** de novo. Tudo continua de onde parou: votos, liberações e situação da votação ficam gravados.
@@ -154,8 +156,9 @@ Se alguma urna ficou com uma liberação sem voto, o sistema avisa antes: se ela
 ## Informações técnicas
 
 - `npm install` e depois `npm start` (o mesmo que o `iniciar.bat` faz). A porta pode ser trocada com a variável `PORT`.
-- `npm test` roda o **teste de concorrência**: sobe um servidor temporário, simula as 4 urnas votando ao mesmo tempo (500 votações, com reenvios duplicados, quedas de conexão e queda do servidor no meio) e confere se a contagem final bate exatamente.
+- `npm test` roda o **teste de concorrência**: sobe um servidor temporário, cadastra e vincula 4 urnas e simula as 4 votando ao mesmo tempo (500 votações, com reenvios duplicados, quedas de conexão e queda do servidor no meio) e confere se a contagem final bate exatamente.
 - Dados em `dados/`: `eleicao.db` (SQLite em modo WAL), `fotos/`, `arquivo/` (cópias das eleições anteriores, feitas por "Iniciar nova eleição") e `backup/eleicao-backup.db` (substituído a cada minuto em que houve voto, e também ao ligar o sistema, ao abrir e ao encerrar a votação).
 - **Sigilo do voto:** a tabela `votos` guarda só um id aleatório (UUID gerado na urna), a urna e a escolha, além dos hashes do encadeamento. Não tem horário nem número sequencial (`WITHOUT ROWID`). A cadeia de hash segue a ordem do id aleatório, não a ordem de chegada, então não revela a sequência dos eleitores. As liberações ficam em outra tabela, só como contadores. Pelo mesmo motivo, o backup é um único arquivo substituído, e não uma série de cópias que poderiam ser comparadas entre si.
 - **Sons da urna:** gerados pelo navegador (Web Audio), sem arquivos: um bip por tecla e o "pililili" na confirmação. Para usar gravações do som original, coloque `tecla.mp3` e `confirma.mp3` na pasta `public/urna/sons/` (veja o `LEIA-ME.txt` de lá).
+- **Vínculo das urnas:** cada urna tem um código de 6 dígitos de uso único. O computador que digita o código recebe um token secreto, guardado no navegador dele; o servidor guarda só o hash desse token e recusa qualquer outro computador naquela urna. Depois de 5 códigos errados, aquele computador espera 1 minuto para tentar de novo.
 - **Integridade:** cada voto guarda o hash do anterior, e o hash final também fica gravado à parte e sai impresso na ata. A verificação recalcula a cadeia inteira.

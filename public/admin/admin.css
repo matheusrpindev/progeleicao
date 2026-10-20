@@ -7,3 +7,4 @@ label.normal { font-weight: 400; }
 td .acoes { margin: 0; }
 td button { padding: 6px 12px; font-size: 14px; }
 .bloqueado .editavel { display: none; }
+.codigo-urna { font-size: 20px; letter-spacing: 3px; font-variant-numeric: tabular-nums; }

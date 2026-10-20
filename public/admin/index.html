@@ -75,8 +75,23 @@
         <div id="avisoChapa" class="aviso oculto"></div>
       </form>
     </section>
+    <section class="cartao">
+      <h2>Urnas</h2>
+      <p>Em cada computador-urna, abra no Chrome o endereço <b id="enderecoUrnas">…</b> e digite o código da urna.
+        Cada urna aceita <b>um único computador</b>: o primeiro que digitar o código.</p>
+      <table>
+        <thead><tr><th>Urna</th><th>Computador</th><th>Ações</th></tr></thead>
+        <tbody id="listaUrnas"></tbody>
+      </table>
+      <div class="acoes editavel">
+        <button type="button" id="btAdicionarUrna">+ Adicionar urna</button>
+        <button type="button" id="btRemoverUrna" class="secundario">Remover a última urna</button>
+      </div>
+      <div id="avisoUrnas" class="aviso oculto"></div>
+    </section>
   </main>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/js/comum.js"></script>
   <script src="/admin/admin.js"></script>
 </body>

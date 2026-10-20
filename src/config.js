@@ -5,7 +5,6 @@ const pastaDados = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : p
 
 module.exports = {
   porta: Number(process.env.PORT) || 3000,
-  numUrnas: 4,
   pastaPublica: path.join(raiz, 'public'),
   pastaDados,
   arquivoBanco: path.join(pastaDados, 'eleicao.db'),

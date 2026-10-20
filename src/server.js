@@ -37,7 +37,7 @@ servidor.on('error', (e) => {
 });
 
 servidor.listen(config.porta, () => {
-  mostrarBanner(config.porta, config.numUrnas);
+  mostrarBanner(config.porta);
   backup.fazerAgora();
 });
 

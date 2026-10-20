@@ -67,8 +67,8 @@ async function http(metodo, rota, corpo) {
   return { status: resp.status, dados };
 }
 
-function conectarUrna(numero) {
-  const socket = io(base, { query: { tipo: 'urna', urna: String(numero) }, reconnectionDelay: 100 });
+function conectarUrna(numero, token) {
+  const socket = io(base, { query: { tipo: 'urna' }, auth: { urna: numero, token }, reconnectionDelay: 100 });
   socket.sincronizacoes = 0;
   socket.on('sincronizar', (d) => { socket.ultimaSincronizacao = d; socket.sincronizacoes++; });
   return socket;
@@ -131,18 +131,46 @@ async function principal() {
   conferir((await http('POST', '/api/senha', { senha: 'teste123' })).status === 200, 'senha criada no primeiro acesso');
   await http('PUT', '/api/admin/dados', { escola: 'Escola de Teste', eleicao: 'Eleição do Grêmio — Teste' });
   for (const c of CHAPAS) await http('POST', '/api/admin/chapas', c);
-  conferir((await http('POST', '/api/admin/abrir')).status === 400, 'não abre sem zerésima');
+  await http('POST', '/api/admin/zeresima');
+  conferir((await http('POST', '/api/admin/abrir')).status === 400, 'não abre sem nenhuma urna cadastrada');
+  for (let n = 1; n <= NUM_URNAS; n++) await http('POST', '/api/admin/urnas');
+  let painel = (await http('GET', '/api/mesario/painel')).dados;
+  conferir(painel.urnas.length === NUM_URNAS && painel.urnas.every((u) => !u.vinculada && /^\d{6}$/.test(u.codigo)), `${NUM_URNAS} urnas adicionadas, cada uma com código de vínculo`);
+  conferir((await http('POST', '/api/admin/abrir')).status === 400, 'não abre sem zerésima (adicionar urna invalida a anterior)');
   const zeresima = await http('POST', '/api/admin/zeresima');
   conferir(zeresima.status === 200 && zeresima.dados.totalVotos === 0 && zeresima.dados.urnas.every((u) => u.votos === 0), 'zerésima: todas as urnas com 0 votos');
   conferir((await http('POST', '/api/admin/abrir')).status === 200, 'votação aberta');
   conferir((await http('POST', '/api/admin/chapas', { numero: '40', nome: 'Tardia' })).status === 400, 'chapas bloqueadas após a abertura');
   conferir((await http('GET', '/api/resultado')).status === 403, 'sem resultado parcial com a votação aberta');
 
+  console.log('\nVínculo de cada urna a um único computador:');
+  const tokens = {};
+  for (const u of painel.urnas) {
+    const v = await http('POST', '/api/urna/vincular', { codigo: u.codigo });
+    tokens[u.urna] = v.dados.token;
+  }
+  conferir(Object.keys(tokens).length === NUM_URNAS && Object.values(tokens).every(Boolean), 'cada urna vinculada pelo seu código');
+  conferir((await http('POST', '/api/urna/vincular', { codigo: painel.urnas[0].codigo })).status === 400, 'código já usado não vincula um segundo computador');
+  const intruso = conectarUrna(1, 'token-de-outro-computador');
+  conferir(await esperarEvento(intruso, 'desvinculada').then(() => true, () => false), 'computador sem o token da urna é recusado');
+  intruso.close();
+
   const urnas = {};
   for (let n = 1; n <= NUM_URNAS; n++) {
-    urnas[n] = conectarUrna(n);
+    urnas[n] = conectarUrna(n, tokens[n]);
     await esperarEvento(urnas[n], 'sincronizar');
   }
+  const expulso = esperarEvento(urnas[NUM_URNAS], 'desvinculada');
+  await http('POST', `/api/admin/urnas/${NUM_URNAS}/desvincular`);
+  conferir(await expulso.then(() => true, () => false), `"trocar computador" desconecta o computador antigo da urna ${NUM_URNAS}`);
+  urnas[NUM_URNAS].close();
+  const antigo = conectarUrna(NUM_URNAS, tokens[NUM_URNAS]);
+  conferir(await esperarEvento(antigo, 'desvinculada').then(() => true, () => false), 'o computador antigo não entra mais');
+  antigo.close();
+  painel = (await http('GET', '/api/mesario/painel')).dados;
+  tokens[NUM_URNAS] = (await http('POST', '/api/urna/vincular', { codigo: painel.urnas[NUM_URNAS - 1].codigo })).dados.token;
+  urnas[NUM_URNAS] = conectarUrna(NUM_URNAS, tokens[NUM_URNAS]);
+  conferir(await esperarEvento(urnas[NUM_URNAS], 'sincronizar').then(() => true, () => false), 'o computador novo entra com o código novo');
 
   console.log('\nRegras de liberação:');
   const semLib = await votar(urnas[1], { id: crypto.randomUUID(), token: 'x', voto: '10' });
@@ -196,6 +224,12 @@ async function principal() {
   conferir(totalEsperado === TOTAL_VOTOS && r.geral.total === TOTAL_VOTOS, `total geral = ${r.geral.total} (esperado ${TOTAL_VOTOS})`);
   conferir(r.conferencia.situacao === 'ok', `conferência automática: ${r.conferencia.situacao} (liberações = ${r.conferencia.liberacoesEmitidas})`);
   conferir(r.integridade.ok, `integridade: ${r.integridade.mensagem}`);
+  const totaisChapa = CHAPAS.map((c) => ({ ...c, votos: Object.values(esperado).reduce((s, e) => s + (e[c.numero] || 0), 0) }));
+  const maximo = Math.max(...totaisChapa.map((c) => c.votos));
+  const esperadas = totaisChapa.filter((c) => c.votos === maximo).map((c) => c.numero).join(',');
+  const validosEsperados = totaisChapa.reduce((s, c) => s + c.votos, 0);
+  conferir(r.vencedor.chapas.map((c) => c.numero).join(',') === esperadas && r.vencedor.votos === maximo && r.vencedor.votosValidos === validosEsperados,
+    `vencedora: ${r.vencedor.chapas.map((c) => `${c.numero} ${c.nome}`).join(' e ')} com ${r.vencedor.votos} de ${r.vencedor.votosValidos} votos válidos${r.vencedor.empate ? ' (empate)' : ''}`);
 
   console.log('\nSigilo, backup e adulteração:');
   const db = new DatabaseSync(path.join(pastaDados, 'eleicao.db'));
@@ -231,6 +265,11 @@ async function principal() {
   const r2 = (await http('GET', '/api/resultado')).dados;
   conferir(voto2.ok && r2.geral.total === 1 && r2.geral.porChapa['20'] === 1 && r2.conferencia.situacao === 'ok' && r2.integridade.ok,
     'segunda eleição funciona do zero (1 voto, conferência e integridade OK)');
+
+  console.log('\nProteção contra tentativa e erro de códigos:');
+  for (let i = 0; i < 5; i++) await http('POST', '/api/urna/vincular', { codigo: '000000' });
+  const bloqueado = await http('POST', '/api/urna/vincular', { codigo: '000000' });
+  conferir(bloqueado.status === 400 && /Espere 1 minuto/.test(bloqueado.dados.erro), 'depois de 5 códigos errados, o computador espera 1 minuto');
 
   for (const s of Object.values(urnas)) s.close();
   await desligarServidor();

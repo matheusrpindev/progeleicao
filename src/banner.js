@@ -28,7 +28,7 @@ function ipsLocais() {
   return ips.sort((a, b) => prioridade(a) - prioridade(b));
 }
 
-function mostrarBanner(porta, numUrnas) {
+function mostrarBanner(porta) {
   const ips = ipsLocais();
   const linha = '='.repeat(78);
   console.log(`\n${linha}\n  SISTEMA DE VOTAÇÃO LIGADO — NÃO FECHE ESTA JANELA\n${linha}\n`);
@@ -38,8 +38,8 @@ function mostrarBanner(porta, numUrnas) {
   } else {
     console.log('  Nas urnas, digite no navegador o endereço:\n');
     console.log(letrasGrandes(`${ips[0]}:${porta}`).replace(/^/gm, '  '));
-    console.log('');
-    for (let i = 1; i <= numUrnas; i++) console.log(`    Urna ${i}:  http://${ips[0]}:${porta}/urna?id=${i}`);
+    console.log(`\n    Endereço completo das urnas:  http://${ips[0]}:${porta}/urna`);
+    console.log('    (cada urna pede o código de vinculação que aparece na tela do Mesário)');
     if (ips.length > 1) console.log(`\n  (Outros endereços deste computador: ${ips.slice(1).join(', ')})`);
   }
   console.log('\n  Neste computador (mesário):');
@@ -49,4 +49,4 @@ function mostrarBanner(porta, numUrnas) {
   console.log(`\n${linha}\n`);
 }
 
-module.exports = { mostrarBanner };
+module.exports = { mostrarBanner, ipsLocais };

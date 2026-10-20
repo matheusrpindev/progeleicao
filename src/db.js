@@ -14,6 +14,14 @@ CREATE TABLE IF NOT EXISTS chapas (
   foto   TEXT
 );
 
+-- Urnas cadastradas no Admin. Cada uma aceita um único computador: o que
+-- digitou o código de vinculação. Guarda-se só o hash do token desse computador.
+CREATE TABLE IF NOT EXISTS urnas (
+  id          INTEGER PRIMARY KEY,
+  codigo      TEXT UNIQUE,
+  dispositivo TEXT
+);
+
 -- Só contadores e o token da liberação em aberto: sem horário e sem
 -- histórico, para que nada aqui possa ser cruzado com a tabela de votos.
 CREATE TABLE IF NOT EXISTS liberacoes (
@@ -82,10 +90,8 @@ function abrirBanco(arquivo = config.arquivoBanco) {
   db.pragma('secure_delete = ON');
   db.exec(ESQUEMA);
 
-  const inserirUrna = db.prepare('INSERT OR IGNORE INTO liberacoes (urna) VALUES (?)');
   const inserirConfig = db.prepare('INSERT OR IGNORE INTO config (chave, valor) VALUES (?, ?)');
   db.transaction(() => {
-    for (let i = 1; i <= config.numUrnas; i++) inserirUrna.run(i);
     inserirConfig.run('status', 'preparacao');
     inserirConfig.run('escola', '');
     inserirConfig.run('eleicao', '');

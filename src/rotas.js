@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 const config = require('./config');
 const { ErroEleicao } = require('./erros');
+const { ipsLocais } = require('./banner');
 
 const PAGINAS = {
   '/admin': 'admin/index.html',
@@ -57,6 +58,27 @@ function criarRotas({ db, auth, eleicao, urnas, apuracao, votos, backup, tempoRe
   // ---- Público (usado pela urna) ----
   api.get('/estado', (req, res) => res.json(eleicao.estado()));
 
+  // Vínculo do computador com uma urna, pelo código mostrado ao mesário.
+  // Depois de 5 códigos errados, o computador espera 1 minuto (evita tentativa e erro).
+  const tentativas = new Map(); // ip -> { erros, bloqueadoAte }
+  api.post('/urna/vincular', (req, res) => {
+    const ip = req.socket.remoteAddress;
+    const t = tentativas.get(ip) || { erros: 0, bloqueadoAte: 0 };
+    if (Date.now() < t.bloqueadoAte) throw new ErroEleicao('Muitos códigos errados. Espere 1 minuto e tente de novo.');
+    let vinculo;
+    try {
+      vinculo = urnas.vincular(req.body.codigo);
+    } catch (erro) {
+      t.erros++;
+      if (t.erros >= 5) Object.assign(t, { erros: 0, bloqueadoAte: Date.now() + 60 * 1000 });
+      tentativas.set(ip, t);
+      throw erro;
+    }
+    tentativas.delete(ip);
+    tempoReal.painelMudou();
+    res.json(vinculo);
+  });
+
   // ---- Admin ----
   const admin = express.Router();
   admin.use(auth.exigirLogin);
@@ -72,6 +94,23 @@ function criarRotas({ db, auth, eleicao, urnas, apuracao, votos, backup, tempoRe
   admin.post('/chapas', (req, res) => { eleicao.criarChapa(req.body); aposMudanca(res); });
   admin.put('/chapas/:numero', (req, res) => { eleicao.editarChapa(req.params.numero, req.body); aposMudanca(res); });
   admin.delete('/chapas/:numero', (req, res) => { eleicao.excluirChapa(req.params.numero); aposMudanca(res); });
+  admin.get('/rede', (req, res) => res.json({ ips: ipsLocais(), porta: config.porta }));
+  admin.post('/urnas', (req, res) => {
+    const urna = urnas.adicionar();
+    tempoReal.painelMudou();
+    res.json({ urna });
+  });
+  admin.delete('/urnas/ultima', (req, res) => {
+    const urna = urnas.removerUltima();
+    tempoReal.urnaDesvinculada(urna);
+    res.json({ urna });
+  });
+  admin.post('/urnas/:urna/desvincular', (req, res) => {
+    const urna = Number(req.params.urna);
+    urnas.desvincular(urna);
+    tempoReal.urnaDesvinculada(urna);
+    res.json({ urna });
+  });
   admin.post('/zeresima', (req, res) => res.json(eleicao.emitirZeresima()));
 
   admin.post('/abrir', async (req, res) => {

@@ -177,5 +177,49 @@ $('formNova').addEventListener('submit', async (e) => {
   mostrarAviso($('avisoAndamento'), 'ok', `Nova eleição iniciada. A anterior foi guardada em dados/arquivo/${r.arquivo}. Confira os dados e as chapas e emita a zerésima.`);
 });
 
+// ---- Urnas (atualizadas em tempo real pelo mesmo painel do mesário) ----
+let painelUrnas = [];
+
+function renderUrnas() {
+  $('listaUrnas').innerHTML = painelUrnas.length
+    ? painelUrnas.map((u) => `
+      <tr>
+        <td class="numero-chapa">${u.urna}</td>
+        <td>${u.vinculada
+          ? `Vinculada a um computador · <span class="suave">${u.status === 'desconectada' ? 'desconectada agora' : 'conectada'}</span>`
+          : `Aguardando computador · código <b class="codigo-urna">${esc(u.codigo)}</b>`}</td>
+        <td>${u.vinculada ? `<button type="button" class="secundario" data-trocar="${u.urna}">Trocar computador</button>` : ''}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="3" class="suave">Nenhuma urna. Clique em "Adicionar urna" para cada computador que vai receber votos.</td></tr>';
+  $('btRemoverUrna').disabled = painelUrnas.length === 0;
+}
+
+// Adicionar/remover urna invalida a zerésima: recarrega o andamento depois.
+$('btAdicionarUrna').addEventListener('click', async () => {
+  if (await executar($('avisoUrnas'), () => api('POST', '/api/admin/urnas'))) carregar();
+});
+$('btRemoverUrna').addEventListener('click', async () => {
+  const ultima = painelUrnas[painelUrnas.length - 1];
+  if (ultima && confirm(`Remover a urna ${ultima.urna}?`) && await executar($('avisoUrnas'), () => api('DELETE', '/api/admin/urnas/ultima'))) carregar();
+});
+$('listaUrnas').addEventListener('click', async (e) => {
+  const urna = e.target.dataset.trocar;
+  if (urna && confirm(`Trocar o computador da urna ${urna}?\n\nO computador atual deixa de funcionar como urna e aparece um código novo para vincular outro.`)) {
+    await executar($('avisoUrnas'), () => api('POST', `/api/admin/urnas/${urna}/desvincular`));
+  }
+});
+
+async function iniciar() {
+  await carregar();
+  const rede = await api('GET', '/api/admin/rede');
+  $('enderecoUrnas').textContent = `http://${rede.ips[0] || 'IP-DO-SERVIDOR'}:${rede.porta}/urna`;
+  const socket = io({ query: { tipo: 'mesario' } });
+  socket.on('painel', (painel) => {
+    painelUrnas = painel.urnas;
+    renderUrnas();
+  });
+  socket.on('disconnect', (motivo) => { if (motivo === 'io server disconnect') location.reload(); });
+}
+
 window.addEventListener('focus', () => { if (estado) carregar(); });
-exigirLogin(carregar);
+exigirLogin(iniciar);

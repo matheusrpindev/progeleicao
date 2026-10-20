@@ -11,7 +11,7 @@ function criarTempoReal(servidorHttp, { auth, eleicao, urnas, votos, backup }) {
   const sincronizarUrna = (urna) => io.to(salaUrna(urna)).emit('sincronizar', { estado: eleicao.estado(), pendente: urnas.pendente(urna) });
 
   io.on('connection', (socket) => {
-    const { tipo, urna: urnaTexto } = socket.handshake.query;
+    const { tipo } = socket.handshake.query;
 
     if (tipo === 'mesario') {
       if (!auth.autenticado(socket.handshake.headers.cookie)) return socket.disconnect(true);
@@ -20,8 +20,13 @@ function criarTempoReal(servidorHttp, { auth, eleicao, urnas, votos, backup }) {
       return;
     }
 
-    const urna = Number(urnaTexto);
-    if (tipo !== 'urna' || !urnas.urnaValida(urna)) return socket.disconnect(true);
+    if (tipo !== 'urna') return socket.disconnect(true);
+    // Só o computador vinculado (que tem o token daquela urna) entra.
+    const urna = Number(socket.handshake.auth?.urna);
+    if (!urnas.dispositivoValido(urna, socket.handshake.auth?.token)) {
+      socket.emit('desvinculada');
+      return socket.disconnect(true);
+    }
 
     const substituido = urnas.conectar(urna, socket.id);
     if (substituido) {
@@ -62,6 +67,13 @@ function criarTempoReal(servidorHttp, { auth, eleicao, urnas, votos, backup }) {
   return {
     estadoMudou() {
       io.emit('estado', eleicao.estado());
+      enviarPainel();
+    },
+    painelMudou: enviarPainel,
+    // O computador da urna deixou de ser aceito (urna desvinculada ou removida).
+    urnaDesvinculada(urna) {
+      io.to(salaUrna(urna)).emit('desvinculada');
+      io.in(salaUrna(urna)).disconnectSockets(true);
       enviarPainel();
     },
     liberacaoEmitida(urna, token) {

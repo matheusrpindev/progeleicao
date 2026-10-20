@@ -27,4 +27,7 @@
 .urna.votando { border-color: var(--verde); }
 .urna.votando .estado { background: var(--verde-fundo); color: var(--verde); }
 
+.urna .codigo { font-size: 40px; font-weight: 700; letter-spacing: 6px; margin: 8px 0; font-variant-numeric: tabular-nums; }
+.urna button.trocar { background: none; color: var(--suave); font-size: 13px; padding: 6px; margin-top: 6px; text-decoration: underline; font-weight: 400; }
+
 .dica { margin-top: 20px; color: var(--suave); }

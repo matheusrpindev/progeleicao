@@ -4,7 +4,11 @@
  * não confirmados pelo servidor, para que nada se perca em quedas de rede
  * ou recarregamentos da página.
  */
-const URNA = Number(new URLSearchParams(location.search).get('id'));
+// Vínculo deste computador com uma urna: { urna, token }, obtido digitando o
+// código mostrado ao mesário. Sem ele, a urna mostra a tela de vínculo.
+const CHAVE_VINCULO = 'urna:vinculo';
+const vinculo = JSON.parse(localStorage.getItem(CHAVE_VINCULO) || 'null');
+const URNA = vinculo?.urna || 0;
 const CHAVE_TOKEN = `urna${URNA}:token`;
 const CHAVE_FILA = `urna${URNA}:fila`;
 const TEMPO_FIM_MS = 3000;
@@ -16,9 +20,11 @@ const s = {
   fila: JSON.parse(localStorage.getItem(CHAVE_FILA) || '[]'),
   digitos: '',
   branco: false,
-  tela: 'bloqueada', // bloqueada | votacao | fim
+  tela: vinculo ? 'bloqueada' : 'vinculo', // vinculo | bloqueada | votacao | fim
   mensagem: 'Conectando ao servidor…',
-  erroFatal: null,   // urna substituída ou endereço inválido: não volta sozinha
+  erroFatal: null,   // urna aberta em outra aba: não volta sozinha
+  codigo: '',        // código de vínculo sendo digitado
+  avisoVinculo: '',
 };
 const fotos = {};    // numero -> { origem, url } com cópia local (blob) da foto, para funcionar mesmo offline
 
@@ -113,8 +119,17 @@ function render() {
   $('vistaBloqueada').classList.toggle('oculto', s.tela !== 'bloqueada');
   $('vistaVotacao').classList.toggle('oculto', s.tela !== 'votacao');
   $('vistaFim').classList.toggle('oculto', s.tela !== 'fim');
-  $('teclado').classList.toggle('inativo', s.tela !== 'votacao');
-  $('numeroUrna').textContent = `Urna ${URNA || '?'}`;
+  $('vistaVinculo').classList.toggle('oculto', s.tela !== 'vinculo');
+  $('teclado').classList.toggle('inativo', s.tela !== 'votacao' && s.tela !== 'vinculo');
+  $('numeroUrna').textContent = `Urna ${URNA}`;
+
+  if (s.tela === 'vinculo') {
+    for (let i = 0; i < 6; i++) {
+      $(`c${i}`).textContent = s.codigo[i] || '';
+      $(`c${i}`).classList.toggle('cursor', i === s.codigo.length);
+    }
+    $('avisoVinculo').textContent = s.avisoVinculo;
+  }
   $('mensagemBloqueio').textContent = s.erroFatal || s.mensagem;
 
   if (s.tela === 'votacao') {
@@ -135,7 +150,8 @@ function render() {
     $('instrucoes').classList.toggle('oculto', !(completo || s.branco));
   }
 
-  const online = socket.connected;
+  const online = Boolean(socket?.connected);
+  $('conexao').classList.toggle('oculto', s.tela === 'vinculo');
   $('conexao').textContent = (online ? 'online' : 'offline') + (s.fila.length ? ` · ${s.fila.length} voto(s) aguardando envio` : '');
   $('conexao').classList.toggle('off', !online);
 }
@@ -152,7 +168,7 @@ let ultimoInformado = null;
 function informarEstado() {
   let estado = 'livre';
   if (s.tela === 'votacao') estado = s.digitos || s.branco ? 'votando' : 'aguardando';
-  if (estado !== ultimoInformado && socket.connected) {
+  if (estado !== ultimoInformado && socket?.connected) {
     socket.emit('estado-urna', estado);
     ultimoInformado = estado;
   }
@@ -177,8 +193,49 @@ function aplicarLiberacao() {
   }
 }
 
+// ---------- Vínculo ----------
+// Votos guardados neste computador que ainda não foram enviados (de qualquer urna).
+function votosGuardados() {
+  const guardados = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = /^urna(\d+):fila$/.exec(localStorage.key(i));
+    const n = m ? JSON.parse(localStorage.getItem(m[0]) || '[]').length : 0;
+    if (n) guardados.push(`${n} da urna ${m[1]}`);
+  }
+  return guardados.length ? ` Há votos guardados neste computador (${guardados.join(', ')}): vincule-o de novo à mesma urna para enviá-los.` : '';
+}
+
+function teclaVinculo(t) {
+  if (/^\d$/.test(t) && s.codigo.length < 6) s.codigo += t;
+  else if (t === 'corrige') s.codigo = '';
+  else if (t === 'confirma' && s.codigo.length === 6) return vincularComputador();
+  render();
+}
+
+async function vincularComputador() {
+  try {
+    const resp = await fetch('/api/urna/vincular', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo: s.codigo }),
+    });
+    const dados = await resp.json();
+    if (!resp.ok) throw new Error(dados.erro || 'Não foi possível vincular.');
+    localStorage.setItem(CHAVE_VINCULO, JSON.stringify(dados));
+    location.reload();
+  } catch (erro) {
+    s.codigo = '';
+    s.avisoVinculo = erro.message === 'Failed to fetch' ? 'Sem conexão com o servidor. Confira a rede e tente de novo.' : erro.message;
+    render();
+  }
+}
+
 // ---------- Teclas ----------
 function tecla(t) {
+  if (s.tela === 'vinculo') {
+    somTecla();
+    return teclaVinculo(t);
+  }
   if (s.tela !== 'votacao') return;
   somTecla();
   if (/^\d$/.test(t)) {
@@ -242,7 +299,7 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 let enviando = false;
 let retentativa = null;
 async function enviarFila() {
-  if (enviando || !socket.connected) return;
+  if (enviando || !socket?.connected) return;
   enviando = true;
   try {
     while (s.fila.length && socket.connected) {
@@ -278,7 +335,8 @@ async function guardarFotos(chapas) {
 }
 
 // ---------- Conexão ----------
-const socket = io({ query: { tipo: 'urna', urna: String(URNA) } });
+// Só o computador vinculado conecta; o servidor confere o token.
+const socket = vinculo ? io({ query: { tipo: 'urna' }, auth: { urna: vinculo.urna, token: vinculo.token } }) : null;
 
 function aplicarEstado(estado) {
   s.estado = estado;
@@ -288,41 +346,51 @@ function aplicarEstado(estado) {
   render();
 }
 
-socket.on('connect', () => {
-  ultimoInformado = null;
-  render();
-});
+if (socket) {
+  socket.on('connect', () => {
+    ultimoInformado = null;
+    render();
+  });
 
-socket.on('sincronizar', ({ estado, pendente }) => {
-  s.estado = estado;
-  // Se o voto dessa liberação já está na fila, a urna fica bloqueada até enviá-lo.
-  const jaVotado = pendente && s.fila.some((v) => v.token === pendente);
-  salvarToken(pendente && !jaVotado && estado.status === 'aberta' ? pendente : null);
-  aplicarEstado(estado);
-  informarEstado();
-  enviarFila();
-});
+  socket.on('sincronizar', ({ estado, pendente }) => {
+    s.estado = estado;
+    // Se o voto dessa liberação já está na fila, a urna fica bloqueada até enviá-lo.
+    const jaVotado = pendente && s.fila.some((v) => v.token === pendente);
+    salvarToken(pendente && !jaVotado && estado.status === 'aberta' ? pendente : null);
+    aplicarEstado(estado);
+    informarEstado();
+    enviarFila();
+  });
 
-socket.on('estado', aplicarEstado);
+  socket.on('estado', aplicarEstado);
 
-socket.on('liberacao', ({ token }) => {
-  if (s.estado?.status !== 'aberta') return;
-  salvarToken(token);
-  aplicarLiberacao();
-  informarEstado();
-});
+  socket.on('liberacao', ({ token }) => {
+    if (s.estado?.status !== 'aberta') return;
+    salvarToken(token);
+    aplicarLiberacao();
+    informarEstado();
+  });
 
-socket.on('substituida', () => {
-  s.erroFatal = 'Esta urna foi aberta em outro computador ou aba. Feche esta janela.';
-});
+  // O mesário trocou o computador desta urna (ou ela foi removida): volta para a
+  // tela de vínculo. A fila de votos não enviados fica guardada.
+  socket.on('desvinculada', () => {
+    localStorage.removeItem(CHAVE_VINCULO);
+    localStorage.removeItem(CHAVE_TOKEN);
+    sessionStorage.setItem('urna:aviso', `Este computador não está mais vinculado à urna ${URNA}.`);
+    location.reload();
+  });
 
-socket.on('disconnect', (motivo) => {
-  // Só o servidor encerra a conexão de propósito: urna substituída ou número inválido.
-  if (motivo === 'io server disconnect') {
-    s.erroFatal = s.erroFatal || 'Endereço de urna inválido. Use /urna?id=1 até /urna?id=4.';
-    if (s.tela === 'votacao') irPara('bloqueada');
-  }
-  render();
-});
+  socket.on('substituida', () => {
+    s.erroFatal = 'Esta urna foi aberta em outra aba deste computador. Feche esta janela.';
+  });
+
+  socket.on('disconnect', (motivo) => {
+    if (motivo === 'io server disconnect' && s.tela === 'votacao') irPara('bloqueada');
+    render();
+  });
+} else {
+  s.avisoVinculo = (sessionStorage.getItem('urna:aviso') || '') + votosGuardados();
+  sessionStorage.removeItem('urna:aviso');
+}
 
 render();

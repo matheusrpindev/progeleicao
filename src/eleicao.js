@@ -108,6 +108,7 @@ function criarEleicao(db) {
   function abrir() {
     exigirPreparacao();
     if (listarChapas().length === 0) throw new ErroEleicao('Cadastre pelo menos uma chapa antes de abrir a votação.');
+    if (db.prepare('SELECT COUNT(*) AS n FROM urnas').get().n === 0) throw new ErroEleicao('Adicione pelo menos uma urna antes de abrir a votação.');
     if (!lerConfig(db, 'zeresima_em')) throw new ErroEleicao('Emita a zerésima antes de abrir a votação.');
     db.transaction(() => {
       gravarConfig(db, 'status', 'aberta');
@@ -150,7 +151,7 @@ function criarEleicao(db) {
     fotos.forEach(apagarFoto);
   }
 
-  return { estado, status, listarChapas, liberacoesPendentes, exigirEncerrada, zerar, salvarDados, criarChapa, editarChapa, excluirChapa, emitirZeresima, abrir, encerrar };
+  return { estado, status, exigirPreparacao, invalidarZeresima, listarChapas, liberacoesPendentes, exigirEncerrada, zerar, salvarDados, criarChapa, editarChapa, excluirChapa, emitirZeresima, abrir, encerrar };
 }
 
 module.exports = { criarEleicao };

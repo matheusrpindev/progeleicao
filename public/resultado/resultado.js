@@ -20,6 +20,19 @@ function blocoConferencia(c) {
   ${c.mensagens.map((m) => `<p><b>Observação:</b> ${esc(m)}</p>`).join('')}`;
 }
 
+const porcento = (n, total) => (total ? `${((n / total) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : '—');
+
+function textoVencedor(v) {
+  if (!v.chapas.length) return 'Não houve votos válidos: nenhuma chapa foi eleita.';
+  const nomes = v.chapas.map((c) => `${esc(c.numero)} — ${esc(c.nome)}`);
+  if (v.empate) {
+    return `<b>EMPATE</b> entre as chapas ${nomes.join(' e ')}, com <b>${v.votos} votos</b> cada
+      (${porcento(v.votos, v.votosValidos)} dos ${v.votosValidos} votos válidos cada). O desempate segue o regulamento da eleição.`;
+  }
+  return `Chapa vencedora: <b>${nomes[0]}</b>, com <b>${v.votos} votos</b>,
+    ${porcento(v.votos, v.votosValidos)} dos <b>${v.votosValidos} votos válidos</b>.`;
+}
+
 function render(r) {
   const g = r.geral;
   const ranking = [...r.chapas].sort((a, b) => (g.porChapa[b.numero] || 0) - (g.porChapa[a.numero] || 0) || a.numero.localeCompare(b.numero));
@@ -37,14 +50,15 @@ function render(r) {
       Encerrada a votação, os boletins das urnas apresentaram o resultado a seguir.</p>
 
     <h2>Resultado geral</h2>
+    <p class="vencedor">${textoVencedor(r.vencedor)}</p>
     <table>
-      <thead><tr><th>Número</th><th>Chapa</th><th class="num">Votos</th></tr></thead>
+      <thead><tr><th>Número</th><th>Chapa</th><th class="num">Votos</th><th class="num">% dos válidos</th></tr></thead>
       <tbody>
-        ${ranking.map((c) => `<tr><td>${esc(c.numero)}</td><td>${esc(c.nome)}</td><td class="num">${g.porChapa[c.numero] || 0}</td></tr>`).join('')}
-        <tr><td colspan="2">Votos válidos (em chapas)</td><td class="num">${g.validos}</td></tr>
-        <tr><td colspan="2">Votos em branco</td><td class="num">${g.brancos}</td></tr>
-        <tr><td colspan="2">Votos nulos</td><td class="num">${g.nulos}</td></tr>
-        <tr class="destaque"><td colspan="2">Total de votantes</td><td class="num">${g.total}</td></tr>
+        ${ranking.map((c) => `<tr><td>${esc(c.numero)}</td><td>${esc(c.nome)}</td><td class="num">${g.porChapa[c.numero] || 0}</td><td class="num">${porcento(g.porChapa[c.numero] || 0, g.validos)}</td></tr>`).join('')}
+        <tr class="destaque"><td colspan="2">Votos válidos (em chapas)</td><td class="num">${g.validos}</td><td class="num">${g.validos ? '100%' : '—'}</td></tr>
+        <tr><td colspan="2">Votos em branco</td><td class="num">${g.brancos}</td><td></td></tr>
+        <tr><td colspan="2">Votos nulos</td><td class="num">${g.nulos}</td><td></td></tr>
+        <tr class="destaque"><td colspan="2">Total de votantes</td><td class="num">${g.total}</td><td></td></tr>
       </tbody>
     </table>
 
@@ -68,6 +82,7 @@ function render(r) {
     </section>
     <p class="hash">Documento gerado em ${formatarDataHora(r.geradoEm)}.</p>`;
 
+  $('vencedorTela').innerHTML = textoVencedor(r.vencedor);
   const c = r.conferencia;
   const tipo = c.situacao === 'ok' ? 'ok' : c.situacao === 'pendente' ? 'atencao' : 'erro';
   $('conferenciaTela').innerHTML = `<div class="aviso ${tipo}">${c.situacao === 'ok'

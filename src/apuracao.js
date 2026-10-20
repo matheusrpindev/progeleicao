@@ -26,6 +26,18 @@ function criarApuracao(db, eleicao, votos) {
     }
     geral.validos = geral.total - geral.brancos - geral.nulos;
 
+    // Vencedora: a chapa com mais votos; brancos e nulos não contam.
+    // Mais de uma com o mesmo máximo = empate (resolvido pelo regulamento).
+    const maximo = Math.max(0, ...chapas.map((c) => geral.porChapa[c.numero] || 0));
+    const vencedoras = maximo > 0 ? chapas.filter((c) => (geral.porChapa[c.numero] || 0) === maximo) : [];
+    const vencedor = {
+      chapas: vencedoras,
+      votos: maximo,
+      votosValidos: geral.validos,
+      percentualValidos: geral.validos ? Math.round((maximo / geral.validos) * 1000) / 10 : 0,
+      empate: vencedoras.length > 1,
+    };
+
     // Conferência: soma dos boletins x contagem direta do banco x liberações do mesário.
     const totalGravado = db.prepare('SELECT COUNT(*) AS n FROM votos').get().n;
     const liberacoesEmitidas = liberacoes.reduce((s, l) => s + l.emitidas, 0);
@@ -59,6 +71,7 @@ function criarApuracao(db, eleicao, votos) {
       chapas,
       boletins,
       geral,
+      vencedor,
       conferencia: { somaBoletins: geral.total, totalGravado, liberacoesEmitidas, urnasPendentes, somaOk, liberacoesOk, situacao, mensagens },
       integridade: votos.verificarIntegridade(),
     };
@@ -73,6 +86,8 @@ function criarApuracao(db, eleicao, votos) {
     };
     for (const b of r.boletins) adicionar(String(b.urna), b);
     adicionar('GERAL', r.geral);
+    linhas.push(['GERAL', '', 'VÁLIDOS', r.geral.validos]);
+    for (const c of r.vencedor.chapas) linhas.push([r.vencedor.empate ? 'EMPATE' : 'VENCEDORA', c.numero, c.nome, r.vencedor.votos]);
     const campo = (v) => (/[";\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
     // BOM + ";" para o Excel em português abrir com acentos e colunas certas.
     return '﻿' + linhas.map((l) => l.map(campo).join(';')).join('\r\n') + '\r\n';

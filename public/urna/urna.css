@@ -83,6 +83,11 @@ html, body {
 .cor-confirma { color: var(--confirma); font-weight: 700; }
 .cor-corrige { color: var(--corrige); font-weight: 700; }
 
+.vinculo { display: flex; flex-direction: column; gap: 3vmin; }
+.texto-vinculo { font-size: 3.8vmin; margin: 2vmin 0 0; line-height: 1.35; }
+.linha-codigo { display: flex; justify-content: center; margin: 3vmin 0; }
+.aviso-vinculo { font-size: 3.4vmin; font-weight: 700; min-height: 1em; margin: 0; }
+
 .fim { display: flex; justify-content: center; align-items: center; font-size: 30vmin; font-weight: 700; letter-spacing: 2vmin; }
 
 .conexao { position: absolute; right: 1.2vmin; bottom: 0.8vmin; font-size: 1.8vmin; color: #777; }

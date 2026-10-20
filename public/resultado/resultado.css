@@ -4,6 +4,8 @@
 .documento .boletins h3 { font-size: 14px; margin: 0 0 4px; }
 .documento .conferencia li { margin: 3px 0; }
 .documento .destaque td { font-weight: 700; }
+.documento .vencedor { border: 2px solid #000; padding: 10px 14px; text-align: left; font-size: 16px; }
+.vencedor-tela { font-size: 22px; margin: 0 0 6px; }
 .marca-ok { color: var(--verde); font-weight: 700; }
 .marca-erro { color: var(--vermelho); font-weight: 700; }
 
