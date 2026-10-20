@@ -93,13 +93,15 @@ function criarUrnas(db, eleicao) {
   }
 
   // ---- Liberações ----
-  const liberar = db.transaction((urna) => {
+  // naUrna: liberada pela tecla " no próprio computador da urna (contada à parte).
+  const liberar = db.transaction((urna, { naUrna = false } = {}) => {
     if (!urnaValida(urna)) throw new ErroEleicao('Urna inválida.');
+    if (naUrna && !eleicao.liberarNaUrna()) throw new ErroEleicao('A liberação pela própria urna está desligada no Admin.');
     if (eleicao.status() !== 'aberta') throw new ErroEleicao('A votação não está aberta.');
     if (!conexoes.has(urna)) throw new ErroEleicao(`A urna ${urna} está desconectada.`);
     if (pendente(urna)) throw new ErroEleicao(`A urna ${urna} já está liberada.`);
     const token = crypto.randomBytes(16).toString('hex');
-    db.prepare('UPDATE liberacoes SET emitidas = emitidas + 1, pendente = ? WHERE urna = ?').run(token, urna);
+    db.prepare('UPDATE liberacoes SET emitidas = emitidas + 1, pela_urna = pela_urna + ?, pendente = ? WHERE urna = ?').run(naUrna ? 1 : 0, token, urna);
     return token;
   });
 
@@ -107,13 +109,13 @@ function criarUrnas(db, eleicao) {
   // telas com senha (mesário e admin).
   function painel() {
     const votos = Object.fromEntries(db.prepare('SELECT urna, COUNT(*) AS n FROM votos GROUP BY urna').all().map((l) => [l.urna, l.n]));
-    const linhas = db.prepare(`SELECT u.id AS urna, u.codigo, u.dispositivo IS NOT NULL AS vinculada, l.pendente
+    const linhas = db.prepare(`SELECT u.id AS urna, u.codigo, u.dispositivo IS NOT NULL AS vinculada, l.pendente, l.pela_urna
       FROM urnas u JOIN liberacoes l ON l.urna = u.id ORDER BY u.id`).all();
     const urnas = linhas.map((l) => {
       const c = conexoes.get(l.urna);
       let status = 'desconectada';
       if (c) status = l.pendente ? (c.estado === 'votando' ? 'votando' : 'aguardando') : 'livre';
-      return { urna: l.urna, status, liberada: Boolean(l.pendente), votos: votos[l.urna] || 0, vinculada: Boolean(l.vinculada), codigo: l.codigo };
+      return { urna: l.urna, status, liberada: Boolean(l.pendente), votos: votos[l.urna] || 0, vinculada: Boolean(l.vinculada), codigo: l.codigo, liberadasNaUrna: l.pela_urna };
     });
     return {
       statusVotacao: eleicao.status(),

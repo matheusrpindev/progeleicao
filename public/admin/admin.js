@@ -22,6 +22,7 @@ function render() {
   if (document.activeElement !== $('escola')) $('escola').value = estado.escola || '';
   if (document.activeElement !== $('eleicao')) $('eleicao').value = estado.eleicao || '';
   $('escola').disabled = $('eleicao').disabled = bloqueado;
+  $('liberarNaUrna').checked = estado.liberarNaUrna;
 
   $('listaChapas').innerHTML = estado.chapas.length
     ? estado.chapas.map((c) => `
@@ -208,6 +209,8 @@ $('listaUrnas').addEventListener('click', async (e) => {
     await executar($('avisoUrnas'), () => api('POST', `/api/admin/urnas/${urna}/desvincular`));
   }
 });
+
+$('liberarNaUrna').addEventListener('change', (e) => executar($('avisoUrnas'), () => api('PUT', '/api/admin/liberar-na-urna', { ativo: e.target.checked })));
 
 async function iniciar() {
   await carregar();

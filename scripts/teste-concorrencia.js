@@ -71,6 +71,7 @@ function conectarUrna(numero, token) {
   const socket = io(base, { query: { tipo: 'urna' }, auth: { urna: numero, token }, reconnectionDelay: 100 });
   socket.sincronizacoes = 0;
   socket.on('sincronizar', (d) => { socket.ultimaSincronizacao = d; socket.sincronizacoes++; });
+  socket.on('liberacao', (d) => { socket.ultimaLiberacao = d.token; });
   return socket;
 }
 
@@ -197,7 +198,25 @@ async function principal() {
   const primeiro = await votar(urnas[1], { id: crypto.randomUUID(), token, voto: '10' });
   conferir(primeiro.ok, 'voto da liberação recuperada é aceito');
   esperado[1]['10'] = 1;
-  const restante = TOTAL_VOTOS - 1;
+
+  console.log('\nLiberação pela tecla " na própria urna:');
+  const chegouAqui = esperarEvento(urnas[2], 'liberacao');
+  const pedido = await urnas[2].timeout(5000).emitWithAck('liberar-aqui');
+  const tokenAqui = (await chegouAqui).token;
+  conferir(pedido.ok && (await votar(urnas[2], { id: crypto.randomUUID(), token: tokenAqui, voto: '20' })).ok, 'urna libera o próprio voto e o voto é aceito');
+  esperado[2]['20'] = 1;
+  const segunda = esperarEvento(urnas[2], 'liberacao');
+  await urnas[2].timeout(5000).emitWithAck('liberar-aqui');
+  const tokenSegunda = (await segunda).token;
+  conferir(!(await urnas[2].timeout(5000).emitWithAck('liberar-aqui')).ok, 'urna já liberada não acumula outra liberação');
+  conferir((await votar(urnas[2], { id: crypto.randomUUID(), token: tokenSegunda, voto: 'BRANCO' })).ok, 'a liberação pendente é usada normalmente');
+  esperado[2].BRANCO = 1;
+  await http('PUT', '/api/admin/liberar-na-urna', { ativo: false });
+  conferir(!(await urnas[3].timeout(5000).emitWithAck('liberar-aqui')).ok, 'com a opção desligada no Admin, a tecla não libera');
+  await http('PUT', '/api/admin/liberar-na-urna', { ativo: true });
+  const p2b = (await http('GET', '/api/mesario/painel')).dados.urnas.find((u) => u.urna === 2);
+  conferir(p2b.liberadasNaUrna >= 1, `painel do mesário mostra ${p2b.liberadasNaUrna} liberação(ões) feitas na urna 2`);
+  const restante = TOTAL_VOTOS - Object.values(esperado).reduce((s, e) => s + Object.values(e).reduce((a, b) => a + b, 0), 0);
 
   console.log(`\nVotação simultânea (${restante} votos restantes nas ${NUM_URNAS} urnas)...`);
   const inicio = Date.now();

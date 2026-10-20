@@ -281,11 +281,29 @@ document.getElementById('teclado').addEventListener('pointerdown', (e) => {
   }
 });
 
+/*
+ * Tecla " (aspas; no ABNT2 é a tecla abaixo do Esc, com ou sem Shift) na tela
+ * "Aguardando liberação" libera um novo voto nesta urna, se o Admin permitir.
+ * Nunca funciona no meio de um voto nem na tela FIM.
+ */
+let liberarAquiLivreEm = 0;
+async function liberarAqui() {
+  if (s.tela !== 'bloqueada' || s.token || s.erroFatal || !socket?.connected) return;
+  if (s.estado?.status !== 'aberta' || !s.estado?.liberarNaUrna || Date.now() < liberarAquiLivreEm) return;
+  liberarAquiLivreEm = Date.now() + 1000;
+  try {
+    const resp = await socket.timeout(5000).emitWithAck('liberar-aqui');
+    if (!resp.ok) console.warn('Liberação recusada:', resp.erro);
+  } catch { /* sem resposta: o mesário pode liberar pelo painel */ }
+}
+const ehAspas = (e) => e.key === '"' || e.key === "'" || (e.key === 'Dead' && (e.code === 'Quote' || e.code === 'Backquote'));
+
 const TECLAS_FISICAS = { Enter: 'confirma', NumpadEnter: 'confirma', Backspace: 'corrige', Delete: 'corrige', Escape: 'corrige', b: 'branco', B: 'branco' };
 document.addEventListener('keydown', (e) => {
   if (e.key === 'F5' || e.ctrlKey || e.altKey || e.metaKey) return;
   e.preventDefault();
   if (e.repeat) return;
+  if (ehAspas(e)) return liberarAqui();
   const t = /^\d$/.test(e.key) ? e.key : TECLAS_FISICAS[e.key];
   if (!t) return;
   const botao = document.querySelector(`[data-tecla="${t}"]`);

@@ -40,6 +40,7 @@ function render(painel) {
         <div class="estado">${ROTULOS[u.status]}</div>
         ${detalhe}
         <div class="votos"><b>${u.votos}</b>votos recebidos</div>
+        ${u.liberadasNaUrna ? `<div class="votos">${u.liberadasNaUrna} liberada(s) na própria urna</div>` : ''}
         <button type="button" class="sucesso" data-urna="${u.urna}" ${podeLiberar ? '' : 'disabled'}>Liberar voto</button>
         <button type="button" class="trocar" data-trocar="${u.urna}">Trocar computador</button>
       </div>`;

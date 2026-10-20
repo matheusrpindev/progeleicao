@@ -83,6 +83,8 @@ Para cada pessoa que chegar:
    - Número que não existe: aparece **VOTO NULO**. Se confirmar, conta como nulo.
 4. Toca o som de confirmação, aparece **FIM** e a urna volta a ficar bloqueada.
 
+**Liberar na própria urna:** a mesma tecla **"** (aspas) apertada no teclado do computador da urna, quando ela mostra "Aguardando liberação do mesário", libera um novo voto ali mesmo. Ela não faz nada no meio de um voto nem na tela FIM. Atenção: o eleitor também usa esse teclado e poderia apertar a tecla depois de votar, então use só com o mesário acompanhando a urna. O painel do mesário mostra quantas liberações foram feitas assim em cada urna. Para desligar, desmarque a opção na seção **Urnas** do Admin.
+
 Cada liberação vale **um único voto**. O mesário vê **quantos** votos cada urna recebeu, **nunca em quem**.
 
 O que significa cada situação no painel:

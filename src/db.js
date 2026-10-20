@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS urnas (
 CREATE TABLE IF NOT EXISTS liberacoes (
   urna     INTEGER PRIMARY KEY,
   emitidas INTEGER NOT NULL DEFAULT 0,
-  pendente TEXT
+  pendente TEXT,
+  pela_urna INTEGER NOT NULL DEFAULT 0 -- quantas foram feitas na própria urna (tecla ")
 );
 
 -- Sigilo: nenhum horário e nenhuma coluna sequencial. WITHOUT ROWID faz a
@@ -89,6 +90,9 @@ function abrirBanco(arquivo = config.arquivoBanco) {
   // antigas das linhas (que revelariam a ordem dos votos) não fiquem no arquivo.
   db.pragma('secure_delete = ON');
   db.exec(ESQUEMA);
+  // Bancos de versões anteriores não tinham a contagem de liberações feitas na urna.
+  const colunas = db.prepare('PRAGMA table_info(liberacoes)').all().map((c) => c.name);
+  if (!colunas.includes('pela_urna')) db.exec('ALTER TABLE liberacoes ADD COLUMN pela_urna INTEGER NOT NULL DEFAULT 0');
 
   const inserirConfig = db.prepare('INSERT OR IGNORE INTO config (chave, valor) VALUES (?, ?)');
   db.transaction(() => {

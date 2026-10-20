@@ -94,6 +94,10 @@ function criarRotas({ db, auth, eleicao, urnas, apuracao, votos, backup, tempoRe
   admin.post('/chapas', (req, res) => { eleicao.criarChapa(req.body); aposMudanca(res); });
   admin.put('/chapas/:numero', (req, res) => { eleicao.editarChapa(req.params.numero, req.body); aposMudanca(res); });
   admin.delete('/chapas/:numero', (req, res) => { eleicao.excluirChapa(req.params.numero); aposMudanca(res); });
+  admin.put('/liberar-na-urna', (req, res) => {
+    eleicao.definirLiberarNaUrna(Boolean(req.body.ativo));
+    aposMudanca(res);
+  });
   admin.get('/rede', (req, res) => res.json({ ips: ipsLocais(), porta: config.porta }));
   admin.post('/urnas', (req, res) => {
     const urna = urnas.adicionar();

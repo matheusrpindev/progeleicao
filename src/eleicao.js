@@ -31,8 +31,13 @@ function criarEleicao(db) {
       abertaEm: lerConfig(db, 'aberta_em'),
       encerradaEm: lerConfig(db, 'encerrada_em'),
       chapas: listarChapas(),
+      liberarNaUrna: liberarNaUrna(),
     };
   }
+
+  // Tecla " na própria urna libera um novo voto. Ligada se nunca foi configurada.
+  const liberarNaUrna = () => lerConfig(db, 'liberar_na_urna') !== '0';
+  const definirLiberarNaUrna = (ativo) => gravarConfig(db, 'liberar_na_urna', ativo ? '1' : '0');
 
   function salvarDados({ escola, eleicao }) {
     exigirPreparacao();
@@ -143,7 +148,7 @@ function criarEleicao(db) {
     const fotos = apagarChapas ? db.prepare('SELECT foto FROM chapas').all().map((c) => c.foto) : [];
     db.transaction(() => {
       db.prepare('DELETE FROM votos').run();
-      db.prepare('UPDATE liberacoes SET emitidas = 0, pendente = NULL').run();
+      db.prepare('UPDATE liberacoes SET emitidas = 0, pela_urna = 0, pendente = NULL').run();
       if (apagarChapas) db.prepare('DELETE FROM chapas').run();
       for (const chave of ['zeresima_em', 'aberta_em', 'encerrada_em', 'hash_final']) gravarConfig(db, chave, null);
       gravarConfig(db, 'status', 'preparacao');
@@ -151,7 +156,7 @@ function criarEleicao(db) {
     fotos.forEach(apagarFoto);
   }
 
-  return { estado, status, exigirPreparacao, invalidarZeresima, listarChapas, liberacoesPendentes, exigirEncerrada, zerar, salvarDados, criarChapa, editarChapa, excluirChapa, emitirZeresima, abrir, encerrar };
+  return { estado, status, liberarNaUrna, definirLiberarNaUrna, exigirPreparacao, invalidarZeresima, listarChapas, liberacoesPendentes, exigirEncerrada, zerar, salvarDados, criarChapa, editarChapa, excluirChapa, emitirZeresima, abrir, encerrar };
 }
 
 module.exports = { criarEleicao };

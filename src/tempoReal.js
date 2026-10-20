@@ -37,6 +37,19 @@ function criarTempoReal(servidorHttp, { auth, eleicao, urnas, votos, backup }) {
     sincronizarUrna(urna);
     enviarPainel();
 
+    // Tecla " na tela "Aguardando liberação" da própria urna.
+    socket.on('liberar-aqui', (responder) => {
+      if (typeof responder !== 'function') return;
+      try {
+        const token = urnas.liberar(urna, { naUrna: true });
+        io.to(salaUrna(urna)).emit('liberacao', { token });
+        enviarPainel();
+        responder({ ok: true });
+      } catch (e) {
+        responder({ ok: false, erro: e.message });
+      }
+    });
+
     socket.on('estado-urna', (estado) => {
       urnas.informarEstado(urna, socket.id, estado);
       enviarPainel();
