@@ -133,6 +133,13 @@ Se alguma urna ficou com uma liberação sem voto, o sistema avisa antes: se ela
 - Aperte **F5** (ou feche e abra o Chrome no mesmo endereço). A urna volta ao estado certo. Se ela estava liberada, continua liberada. Nenhum voto confirmado se perde.
 - Se o computador da urna quebrou de vez: na tela do **Mesário**, clique em **Trocar computador** naquela urna. Aparece um código novo; abra o endereço das urnas no computador substituto e digite o código. O computador antigo deixa de funcionar como urna. Atenção: se a urna quebrada tinha um voto "aguardando envio", ele só é recuperado ligando aquela máquina na rede e vinculando-a de novo **à mesma urna**.
 
+**Na urna aparece "conexão recusada" ou "não é possível acessar esse site"**
+- Na urna, **nunca use `localhost`**: `localhost` quer dizer "este próprio computador", e o sistema roda no servidor. Use o IP do servidor, que aparece em letras grandes na janela preta e no Admin (ex.: `http://192.168.0.15:3000/urna`).
+- Se mesmo com o IP não abrir:
+  1. No servidor, mude o perfil da rede para **Privada** (Configurações → Rede e Internet → clique na rede). Ou, no **Firewall do Windows Defender → Permitir um aplicativo**, marque **Node.js** em **Privada** e **Pública**.
+  2. Confira se o servidor e as urnas estão ligados **no mesmo roteador**.
+  3. Redes de escola e de governo costumam impedir que um computador fale com o outro. Use um roteador próprio, sem internet, só para a eleição.
+
 **A urna pede o código de vinculação de novo**
 - Alguém clicou em "Trocar computador", ou o histórico do Chrome daquele computador foi apagado. Digite o código que aparece no Mesário para aquela urna.
 
